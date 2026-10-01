@@ -94,6 +94,48 @@ history_csv = "consumption_SP6.csv"
 column = "C_SP6"
 deployed_model = "Extra Trees"
 
+# Deep-learning hyperparameters for SP1, from the architecture search
+# reported in the companion article (Appendix B).
+[dl.SP1]
+lstm = { n_input = 72, nodes = 30, epochs = 50, batch = 32, dropout = 0.0 }
+gru  = { n_input = 192, nodes = 25, epochs = 20, batch = 32, dropout = 0.0 }
+tcn  = { n_input = 144, filters = 18, dilations = [1, 2, 4], epochs = 20, batch = 32, dropout = 0.0 }
+
+# Deep-learning hyperparameters for SP2, from the architecture search
+# reported in the companion article (Appendix B).
+[dl.SP2]
+lstm = { n_input = 72, nodes = 18, epochs = 20, batch = 64, dropout = 0.0 }
+gru  = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.2 }
+tcn  = { n_input = 72, filters = 25, dilations = [1, 2, 4], epochs = 50, batch = 32, dropout = 0.0 }
+
+# Deep-learning hyperparameters for SP3, from the architecture search
+# reported in the companion article (Appendix B).
+[dl.SP3]
+lstm = { n_input = 144, nodes = 25, epochs = 50, batch = 64, dropout = 0.0 }
+gru  = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.0 }
+tcn  = { n_input = 72, filters = 25, dilations = [1, 2, 4], epochs = 50, batch = 32, dropout = 0.0 }
+
+# Deep-learning hyperparameters for SP4, from the architecture search
+# reported in the companion article (Appendix B).
+[dl.SP4]
+lstm = { n_input = 72, nodes = 30, epochs = 50, batch = 32, dropout = 0.0 }
+gru  = { n_input = 144, nodes = 25, epochs = 50, batch = 64, dropout = 0.0 }
+tcn  = { n_input = 192, filters = 30, dilations = [1, 2, 4, 8], epochs = 50, batch = 64, dropout = 0.2 }
+
+# Deep-learning hyperparameters for SP5, from the architecture search
+# reported in the companion article (Appendix B).
+[dl.SP5]
+lstm = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.2 }
+gru  = { n_input = 144, nodes = 25, epochs = 50, batch = 32, dropout = 0.0 }
+tcn  = { n_input = 72, filters = 18, dilations = [1, 2, 4], epochs = 20, batch = 32, dropout = 0.0 }
+
+# Deep-learning hyperparameters for SP6, from the architecture search
+# reported in the companion article (Appendix B).
+[dl.SP6]
+lstm = { n_input = 72, nodes = 25, epochs = 20, batch = 32, dropout = 0.0 }
+gru  = { n_input = 72, nodes = 18, epochs = 20, batch = 32, dropout = 0.0 }
+tcn  = { n_input = 144, filters = 25, dilations = [1, 2, 4, 8], epochs = 50, batch = 32, dropout = 0.0 }
+
 [battery]
 capacity_kwh = 50.16
 min_soc_kwh = 5.0

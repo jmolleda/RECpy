@@ -56,7 +56,7 @@ FOLDS = [
 # LSTM/GRU params: (n_input, nodes, epochs, batch, dropout)
 # TCN params:      (n_input, filters, dilations, epochs, batch, dropout)
 # ---------------------------------------------------------------------------
-SUPPLY_POINTS = CONFIG.supply_points
+SUPPLY_POINTS = CONFIG.supply_points_dl()
 
 # ---------------------------------------------------------------------------
 # Core helpers (identical to generate_dl_predictions.py)

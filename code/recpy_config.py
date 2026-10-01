@@ -128,6 +128,29 @@ class Config:
             })
         return out
 
+    def dl_params(self, sp_id: str, arch: str) -> tuple:
+        """DL hyperparameters for one supply point, in the tuple order the model
+        builders expect: lstm/gru -> (n_input, nodes, epochs, batch, dropout);
+        tcn -> (n_input, filters, dilations, epochs, batch, dropout)."""
+        d = self.raw["dl"][sp_id][arch]
+        if arch == "tcn":
+            return (d["n_input"], d["filters"], list(d["dilations"]),
+                    d["epochs"], d["batch"], d["dropout"])
+        return (d["n_input"], d["nodes"], d["epochs"], d["batch"], d["dropout"])
+
+    def supply_points_dl(self) -> list[dict[str, Any]]:
+        """Supply points enriched with DL hyperparameters and drop_cols, as the
+        deep-learning scripts consume them."""
+        cols = [sp["column"] for sp in self.raw["supply_points"]]
+        out = []
+        for sp in self.supply_points:
+            entry = dict(sp)
+            entry["drop_cols"] = [c for c in cols if c != sp["column"]]
+            for arch in ("lstm", "gru", "tcn"):
+                entry[arch] = self.dl_params(sp["id"], arch)
+            out.append(entry)
+        return out
+
     @property
     def supply_point_ids(self) -> list[str]:
         return [sp["id"] for sp in self.raw["supply_points"]]

@@ -53,7 +53,7 @@ FOLDS = [
 # ---------------------------------------------------------------------------
 # Supply-point registry with best DL hyperparameters (identical to generate_dl_cv.py)
 # ---------------------------------------------------------------------------
-SUPPLY_POINTS = CONFIG.supply_points
+SUPPLY_POINTS = CONFIG.supply_points_dl()
 
 # ---------------------------------------------------------------------------
 # Core helpers
