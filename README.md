@@ -19,7 +19,8 @@ artifact of peer review.
 ## Repository layout
 
 ```
-code/    all analysis scripts (+ make_synthetic_data.py)
+code/    all analysis scripts (+ run_pipeline.py, make_synthetic_data.py)
+config/  experiment configurations (default.toml, quick.toml)
 data/    a fully synthetic example dataset (see below)
 requirements.txt
 LICENSE  (MIT)
@@ -36,6 +37,38 @@ Python 3.12 with the pinned dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
+## Configuration
+
+Nothing is hard-coded in the scripts: every setting — calendar year, data files,
+cross-validation folds, supply points, model hyperparameters, battery and grid
+limits — lives in a TOML file read by `code/recpy_config.py`.
+
+```bash
+python code/recpy_config.py                       # print the active configuration
+RECPY_CONFIG=config/quick.toml python code/...    # use a different configuration
+RECPY_OUTPUT_DIR=/results python code/...         # redirect outputs only
+```
+
+Two configurations are shipped:
+
+| File | Purpose |
+| --- | --- |
+| `config/default.toml` | The published experiment: 6 supply points, 4 seasonal folds, 15 regressors, ARIMA/SARIMAX and LSTM/GRU/TCN. Reproduces the results in the article. |
+| `config/quick.toml` | A reduced run of the same pipeline that finishes in minutes: 2 supply points, 1 fold, the first days of the test month, 5 regressors. For smoke-testing and for hosted platforms with a limited compute budget. |
+
+`config/default.toml` reproduces the archived v1.0.0 behaviour exactly, so an
+unmodified checkout needs no configuration at all. To run the framework on a
+different energy community, copy it and edit the `[[supply_points]]`,
+`[[folds]]`, `[battery]` and `[grid]` sections; `RECPY_OUTPUT_DIR` keeps the
+results of each configuration apart.
+
+`config/quick.toml` reduces the *scale*, not the method: every model keeps its
+published hyperparameters and every stage of the pipeline runs, in about four to
+five minutes on one core. It is a smoke test, not a result — five test days are
+too few for the Wilcoxon tournament to be conclusive and two supply points too
+few for the community-level savings to mean anything, so the numbers it prints
+should not be read as the published ones.
 
 ## Data availability
 
@@ -67,45 +100,63 @@ Expected files and columns (real or synthetic):
 Prices are taken from the Spanish TSO ESIOS service and weather features from the
 Open-Meteo API; the corresponding synthetic columns imitate their format.
 
-## Running the full experiment
+## Running the experiment
 
-With a dataset in `data/` (synthetic or real), reproduce the study by running, in
-order:
+The whole forecasting-to-scheduling pipeline runs with one command, which
+executes the stages in dependency order and reports the time each one took:
+
+```bash
+python code/run_pipeline.py                                        # published configuration
+RECPY_CONFIG=config/quick.toml python code/run_pipeline.py         # minutes, reduced scale
+```
+
+If the configured data files are absent, the synthetic dataset is generated
+first. The configuration is checked before anything expensive starts, so an
+inconsistency — a model family nobody runs, a supply point whose selected model
+was left out of the regressor subset — is reported immediately rather than hours
+in.
+
+The six stages the driver runs can also be run on their own, in this order:
 
 ```bash
 # 1. Forecasting -- build the per-fold prediction files
-python code/generate_ml_cv.py          # ML/statistical regressors + Naive-168
-python code/generate_arima_cv.py       # ARIMA / SARIMAX
-python code/generate_dl_cv.py          # LSTM / GRU / TCN (single-fit)
-python code/generate_dl_cv_daily.py    # LSTM / GRU / TCN (daily-retrained)
+python code/generate_ml_cv.py          # ML regressors + Naive-168
+python code/generate_arima_cv.py       # ARIMA / SARIMAX (adds columns)
+python code/generate_dl_cv.py          # LSTM / GRU / TCN, single-fit (adds columns)
 
 # 2. Statistical model selection
 python code/wilcoxon_cv.py             # Wilcoxon net-wins tournament
-python code/wilcoxon_cv_robust.py      # robustness: daily agg., Holm/BH, Diebold-Mariano
 
 # 3. Figures
-python code/visualize_cv.py            # figures -> code/cross_validation/figures/
+python code/visualize_cv.py            # figures -> <output>/cross_validation/figures/
 
 # 4. Optimization
-python code/run_optimization_cv.py                 # day-ahead LP over the folds
+python code/run_optimization_cv.py     # day-ahead LP over the folds
+```
+
+The remaining scripts are the additional experiments reported in the article.
+They are not part of the driver because they are sensitivity and robustness
+analyses rather than the pipeline itself:
+
+```bash
+python code/generate_dl_cv_daily.py                # LSTM/GRU/TCN, daily-retrained
+python code/wilcoxon_cv_robust.py                  # daily agg., Holm/BH, Diebold-Mariano
 python code/optimization_degradation.py            # battery-degradation sensitivity
 python code/optimization_lookahead_downstream.py   # PV look-ahead + downstream cost
-
-# 5. Additional analyses
-python code/ensemble_analysis.py       # forecast-combination strategies
-python code/cold_start_analysis.py     # limited-history (cold-start) experiment
-python code/timing_analysis.py         # training / retraining times
+python code/ensemble_analysis.py                   # forecast-combination strategies
+python code/cold_start_analysis.py                 # limited-history (cold-start) experiment
+python code/timing_analysis.py                     # training / retraining times
 ```
 
 ## Reproducibility
 
 - **Python** 3.12; dependencies pinned in `requirements.txt`.
-- **Random seed** `RS = 123` (with `PYTHONHASHSEED=0`, and NumPy/TensorFlow
-  seeded) is fixed in the training scripts.
+- **Random seed** `random_seed = 123` (with `PYTHONHASHSEED=0`, and
+  NumPy/TensorFlow seeded) is set in the configuration file.
 - **Calendar year**: fold boundaries are specified as month–day only and combined
-  with a `YEAR` constant (placeholder `2025`) defined at the top of each script;
-  the synthetic dataset uses the same value. Set `YEAR` to the calendar year of
-  your data before running on real data.
+  with the `year` key of the active configuration (placeholder `2025`); the
+  synthetic dataset uses the same value. Set `year` in your configuration file to
+  the calendar year of your data before running on real data.
 - **Evaluation protocol**: blocked expanding-window cross-validation with four
   seasonal folds (April, July, October, December) and walk-forward 24-hour
   forecasting. ML/statistical models are univariate (192-hour consumption lag);
@@ -117,7 +168,8 @@ python code/timing_analysis.py         # training / retraining times
 - `generate_ml_cv.py` — 15 ML/linear regressors, expanding-window walk-forward.
 - `generate_arima_cv.py` — ARIMA / SARIMAX folds.
 - `generate_dl_cv.py`, `generate_dl_cv_daily.py` — LSTM/GRU/TCN (single-fit and
-  daily-retrained regimes); architecture grids and seeds are defined inside.
+  daily-retrained regimes); per-supply-point architectures come from the `[dl.*]`
+  sections of the configuration.
 
 **Statistical model selection**
 - `wilcoxon_cv.py` — pairwise Wilcoxon signed-rank tournament (net wins).
@@ -143,6 +195,12 @@ python code/timing_analysis.py         # training / retraining times
 
 **Synthetic data**
 - `make_synthetic_data.py` — generates the synthetic example dataset in `data/`.
+
+**Infrastructure**
+- `recpy_config.py` — loads the active configuration; every other script imports
+  its settings from here. Run it directly to print the configuration in use.
+- `run_pipeline.py` — runs the pipeline stages in dependency order, skipping the
+  model families the active configuration excludes.
 
 ## License
 

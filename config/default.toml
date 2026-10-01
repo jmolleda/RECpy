@@ -4,8 +4,8 @@
 #   Machine Learning with Applications 26, 101016 (2026)
 #   https://doi.org/10.1016/j.mlwa.2026.101016
 #
-# Override with:  RECPY_CONFIG=config/quick.toml python code/generate_ml_cv.py
-# Redirect output: RECPY_OUTPUT_DIR=/results python code/generate_ml_cv.py
+# Override with:  RECPY_CONFIG=config/quick.toml python code/run_pipeline.py
+# Redirect output: RECPY_OUTPUT_DIR=/results python code/run_pipeline.py
 
 name = "default"
 description = "Full published configuration: 24 models, 4 seasonal folds, 6 supply points."
@@ -21,14 +21,27 @@ data = "data"
 # because files written under code/ are discarded at the end of a Reproducible Run.
 output = "code"
 
+[data]
+# Every consumption column present in the multivariate dataset, including
+# supply points this configuration does not analyse. The deep-learning models
+# are univariate in consumption, so all but the target must be removed before
+# scaling; listing them here keeps that correct for a configuration that
+# analyses only some of the supply points.
+consumption_columns = ["C_SP1", "C_SP2", "C_SP3", "C_SP4", "C_SP5", "C_SP6"]
+
 [data_files]
 prices = "prices_cv_folds.csv"
 solar = "solar_generation.csv"
 meteo_calendar = "consumption_meteo_calendar.csv"
 
 [models]
-# Model families to run. The quick configuration drops "dl".
+# Model families to run: machine learning, statistical (ARIMA/SARIMAX) and
+# deep learning. Dropping one skips its stage in code/run_pipeline.py.
 families = ["ml", "arima", "dl"]
+# Subset of ML regressors to run; omit or leave empty to run all 15.
+ml_subset = []
+# Limit each fold's test window to the first N days; 0 means the whole month.
+max_test_days = 0
 
 [[folds]]
 name = "fold1_apr"
@@ -94,43 +107,71 @@ history_csv = "consumption_SP6.csv"
 column = "C_SP6"
 deployed_model = "Extra Trees"
 
-# Deep-learning hyperparameters for SP1, from the architecture search
-# reported in the companion article (Appendix B).
+# Per-supply-point ARIMA and SARIMAX orders, and the exogenous variables
+# selected for SARIMAX, as reported in the companion article.
+[arima.SP1]
+order = [7, 0, 2]
+sarimax_order = [1, 0, 1]
+sarimax_seasonal = [1, 0, 1, 24]
+sarimax_exog = ["Hour", "diffuse_radiation_instant (W/m²)"]
+
+[arima.SP2]
+order = [5, 0, 3]
+sarimax_order = [1, 1, 1]
+sarimax_seasonal = [1, 0, 1, 24]
+sarimax_exog = ["temperature_2m (°C)"]
+
+[arima.SP3]
+order = [2, 0, 3]
+sarimax_order = [0, 0, 1]
+sarimax_seasonal = [1, 0, 1, 24]
+sarimax_exog = ["diffuse_radiation_instant (W/m²)"]
+
+[arima.SP4]
+order = [3, 0, 3]
+sarimax_order = [1, 1, 1]
+sarimax_seasonal = [0, 0, 1, 24]
+sarimax_exog = ["Hour"]
+
+[arima.SP5]
+order = [1, 1, 3]
+sarimax_order = [1, 0, 1]
+sarimax_seasonal = [1, 0, 1, 24]
+sarimax_exog = ["Hour"]
+
+[arima.SP6]
+order = [3, 0, 2]
+sarimax_order = [1, 0, 1]
+sarimax_seasonal = [1, 1, 1, 24]
+sarimax_exog = ["DoW", "Holidays", "diffuse_radiation_instant (W/m²)"]
+
+# Per-supply-point deep-learning architectures from the search reported in
+# the companion article (Appendix B).
 [dl.SP1]
 lstm = { n_input = 72, nodes = 30, epochs = 50, batch = 32, dropout = 0.0 }
 gru  = { n_input = 192, nodes = 25, epochs = 20, batch = 32, dropout = 0.0 }
 tcn  = { n_input = 144, filters = 18, dilations = [1, 2, 4], epochs = 20, batch = 32, dropout = 0.0 }
 
-# Deep-learning hyperparameters for SP2, from the architecture search
-# reported in the companion article (Appendix B).
 [dl.SP2]
 lstm = { n_input = 72, nodes = 18, epochs = 20, batch = 64, dropout = 0.0 }
 gru  = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.2 }
 tcn  = { n_input = 72, filters = 25, dilations = [1, 2, 4], epochs = 50, batch = 32, dropout = 0.0 }
 
-# Deep-learning hyperparameters for SP3, from the architecture search
-# reported in the companion article (Appendix B).
 [dl.SP3]
 lstm = { n_input = 144, nodes = 25, epochs = 50, batch = 64, dropout = 0.0 }
 gru  = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.0 }
 tcn  = { n_input = 72, filters = 25, dilations = [1, 2, 4], epochs = 50, batch = 32, dropout = 0.0 }
 
-# Deep-learning hyperparameters for SP4, from the architecture search
-# reported in the companion article (Appendix B).
 [dl.SP4]
 lstm = { n_input = 72, nodes = 30, epochs = 50, batch = 32, dropout = 0.0 }
 gru  = { n_input = 144, nodes = 25, epochs = 50, batch = 64, dropout = 0.0 }
 tcn  = { n_input = 192, filters = 30, dilations = [1, 2, 4, 8], epochs = 50, batch = 64, dropout = 0.2 }
 
-# Deep-learning hyperparameters for SP5, from the architecture search
-# reported in the companion article (Appendix B).
 [dl.SP5]
 lstm = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.2 }
 gru  = { n_input = 144, nodes = 25, epochs = 50, batch = 32, dropout = 0.0 }
 tcn  = { n_input = 72, filters = 18, dilations = [1, 2, 4], epochs = 20, batch = 32, dropout = 0.0 }
 
-# Deep-learning hyperparameters for SP6, from the architecture search
-# reported in the companion article (Appendix B).
 [dl.SP6]
 lstm = { n_input = 72, nodes = 25, epochs = 20, batch = 32, dropout = 0.0 }
 gru  = { n_input = 72, nodes = 18, epochs = 20, batch = 32, dropout = 0.0 }
@@ -148,6 +189,8 @@ initial_soc_fraction = 0.50
 export_limit_kw = 32.0
 
 [forecasting]
+# First day of the training history (month-day, combined with "year").
+train_start = "01-02"
 lookback_hours = 192
 horizon_hours = 24
 random_seed = 123

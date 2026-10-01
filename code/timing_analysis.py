@@ -72,7 +72,11 @@ def time_dl():
     for sp in dl.SUPPLY_POINTS:
         data = pd.read_csv(BASE / dl.METEO_CSV, sep=",", decimal=".",
                            index_col=0, parse_dates=["date_time"])
-        data.drop(columns=sp["drop_cols"], inplace=True)
+        # Keep the target consumption column first, then the calendar and weather
+        # features; selecting rather than dropping guarantees the target is
+        # column 0 whichever supply points the configuration analyses.
+        data = data[[sp["column"]] + [c for c in data.columns
+                                      if c not in CONFIG.consumption_columns]]
         train_df = data.loc[TRAIN_START:TRAIN_END]
         scaler = preprocessing.MinMaxScaler()
         train_scaled = scaler.fit_transform(train_df)

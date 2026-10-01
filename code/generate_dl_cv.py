@@ -40,7 +40,7 @@ tf.random.set_seed(RS)
 
 BASE        = Path(__file__).parent.parent
 METEO_CSV   = "data/consumption_meteo_calendar.csv"
-TRAIN_START = f"{YEAR}-01-02"
+TRAIN_START = CONFIG.train_start
 
 # ---------------------------------------------------------------------------
 # Fold definitions (identical to generate_ml_cv.py)
@@ -151,10 +151,14 @@ def run_fold_sp(fold: dict, sp: dict, out_dir: Path) -> None:
         sep=",", decimal=".",
         index_col=0, parse_dates=["date_time"]
     )
-    data.drop(columns=sp["drop_cols"], inplace=True)
+    # Keep the target consumption column first, then the calendar and weather
+    # features. Selecting rather than dropping guarantees the target is column 0
+    # whichever supply points the configuration analyses.
+    data = data[[sp["column"]] + [c for c in data.columns
+                                  if c not in CONFIG.consumption_columns]]
 
     train_df = data.loc[TRAIN_START:fold["train_end"]]
-    test_df  = data.loc[fold["test_start"]:fold["test_end"]]
+    test_df  = CONFIG.limit_test(data.loc[fold["test_start"]:fold["test_end"]])
 
     scaler       = preprocessing.MinMaxScaler()
     train_scaled = scaler.fit_transform(train_df)
@@ -168,6 +172,17 @@ def run_fold_sp(fold: dict, sp: dict, out_dir: Path) -> None:
     # Load the ML CSV written by generate_ml_cv.py to append DL columns
     csv_path = out_dir / f"Predictions_C_{sp_id}_{fold['name']}.csv"
     all_df   = pd.read_csv(csv_path, index_col=0, parse_dates=True)
+
+    # This stage appends to the prediction file the machine-learning stage wrote,
+    # so its own inverse-scaled observations must be the very same series. They
+    # diverge if the wrong consumption column ends up first in the frame, and the
+    # appended columns would then be scored against a different household.
+    observed = all_df["Observed"].to_numpy()
+    if len(observed) != len(obs) or not np.allclose(obs, observed, atol=1e-6):
+        raise ValueError(
+            f"{sp_id} {fold['name']}: the deep-learning target is not the "
+            f"'Observed' column of {csv_path.name}; check data.consumption_columns"
+        )
 
     for arch_name in ["lstm", "gru", "tcn"]:
         col_name = arch_name.upper() + "_single"

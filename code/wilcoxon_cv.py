@@ -32,15 +32,12 @@ BASE_CV.mkdir(parents=True, exist_ok=True)
 ALPHA   = 0.05
 
 FOLDS = [
-    {"name": "fold1_apr", "test_start": f"{YEAR}-04-01", "test_end": f"{YEAR}-04-30"},
-    {"name": "fold2_jul", "test_start": f"{YEAR}-07-01", "test_end": f"{YEAR}-07-31"},
-    {"name": "fold3_oct", "test_start": f"{YEAR}-10-01", "test_end": f"{YEAR}-10-31"},
-    {"name": "fold4_dec", "test_start": f"{YEAR}-12-01", "test_end": f"{YEAR}-12-31"},
+    {k: f[k] for k in ("name", "test_start", "test_end")}
+    for f in CONFIG.folds
 ]
 
-SP_IDS = ["SP1", "SP2", "SP3", "SP4", "SP5", "SP6"]
-SP_NAMES = {"SP1": "SP1", "SP2": "SP2", "SP3": "SP3",
-            "SP4": "SP4", "SP5": "SP5", "SP6": "SP6"}
+SP_IDS = CONFIG.supply_point_ids
+SP_NAMES = {sp["id"]: sp["name"] for sp in CONFIG.supply_points}
 
 
 # ---------------------------------------------------------------------------

@@ -24,21 +24,20 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 PER_FOLD = BASE_CV / "wilcoxon_cv_per_fold.csv"
 AGG      = BASE_CV / "wilcoxon_cv_aggregated.csv"
 
-FOLD_LABELS = {
-    "fold1_apr": "Apr\n(Fold 1)",
-    "fold2_jul": "Jul\n(Fold 2)",
-    "fold3_oct": "Oct\n(Fold 3)",
-    "fold4_dec": "Dec\n(Fold 4)",
-}
-FOLD_SHORT = {
-    "fold1_apr": "Apr", "fold2_jul": "Jul",
-    "fold3_oct": "Oct", "fold4_dec": "Dec",
-}
-SP_ORDER  = ["SP1", "SP2", "SP3", "SP4", "SP5", "SP6"]
-SP_SHORT  = {"SP1": "SP1", "SP2": "SP2", "SP3": "SP3",
-             "SP4": "SP4", "SP5": "SP5", "SP6": "SP6"}
-SP_TAG    = {"SP1": "SP1", "SP2": "SP2", "SP3": "SP3",
-             "SP4": "SP4", "SP5": "SP5", "SP6": "SP6"}
+# Fold and supply-point labels follow the active configuration, so the figures
+# describe whatever experiment was run. A fold label reads "Fold 1 - Apr": the
+# season is the part after the dash, and the panel label stacks the two.
+FOLD_ORDER  = [f["name"] for f in CONFIG.folds]
+FOLD_SEASON = {f["name"]: f["label"].split("\u2013")[-1].strip()
+               for f in CONFIG.folds}
+FOLD_NUMBER = {f["name"]: f["label"].split("\u2013")[0].strip()
+               for f in CONFIG.folds}
+FOLD_LABELS = {k: f"{FOLD_SEASON[k]}\n({FOLD_NUMBER[k]})" for k in FOLD_ORDER}
+FOLD_SHORT  = dict(FOLD_SEASON)
+
+SP_ORDER  = CONFIG.supply_point_ids
+SP_SHORT  = {sp: sp for sp in SP_ORDER}
+SP_TAG    = {sp: sp for sp in SP_ORDER}
 
 # Display-name mapping for figure labels (keeps CSV column names unchanged)
 MODEL_DISPLAY = {
@@ -84,6 +83,23 @@ def load_data():
     return pf, agg
 
 
+def sp_grid(figsize):
+    """Figure with one panel per supply point. The published figures are 2x3
+    grids for the six supply points of the case study; a configuration with a
+    different number keeps up to three columns and scales the figure to match."""
+    n = len(SP_ORDER)
+    ncols = min(3, n)
+    nrows = -(-n // ncols)
+    if (nrows, ncols) != (2, 3):
+        w, h = figsize
+        figsize = (w / 3 * ncols, h / 2 * nrows)
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False)
+    axes = axes.flatten()
+    for ax in axes[n:]:
+        ax.set_visible(False)
+    return fig, axes
+
+
 # ---------------------------------------------------------------------------
 # Figure 1 — Net wins heatmap (2×3 grid, one panel per SP)
 # ---------------------------------------------------------------------------
@@ -96,10 +112,9 @@ def fig1_heatmap(pf: pd.DataFrame):
     )
     VMIN, VMAX = -20, 20
 
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    axes = axes.flatten()
+    fig, axes = sp_grid((18, 10))
 
-    folds = ["fold1_apr", "fold2_jul", "fold3_oct", "fold4_dec"]
+    folds = FOLD_ORDER
 
     for idx, sp_name in enumerate(SP_ORDER):
         ax  = axes[idx]
@@ -159,8 +174,7 @@ def fig1_heatmap(pf: pd.DataFrame):
 # Figure 2 — Average net wins bar chart (one per SP, 2×3 grid)
 # ---------------------------------------------------------------------------
 def fig2_avg_ranking(agg: pd.DataFrame):
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    axes = axes.flatten()
+    fig, axes = sp_grid((18, 10))
 
     for idx, sp_name in enumerate(SP_ORDER):
         ax     = axes[idx]
@@ -254,12 +268,11 @@ def fig3_rmse_vs_wilcoxon(pf: pd.DataFrame):
 # Figure 4 — Bump chart: model rank trajectory across folds (2×3 grid)
 # ---------------------------------------------------------------------------
 def fig4_bump_chart(pf: pd.DataFrame):
-    folds = ["fold1_apr", "fold2_jul", "fold3_oct", "fold4_dec"]
-    fold_labels = ["Apr", "Jul", "Oct", "Dec"]
+    folds = FOLD_ORDER
+    fold_labels = [FOLD_SHORT[f] for f in folds]
     TOP_N = 8  # show only top-N models by mean net wins to avoid clutter
 
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    axes = axes.flatten()
+    fig, axes = sp_grid((18, 10))
 
     for idx, sp_name in enumerate(SP_ORDER):
         ax    = axes[idx]
@@ -312,8 +325,8 @@ def fig4_bump_chart(pf: pd.DataFrame):
 # Figure 5 — Stat-best vs RMSE-best agreement heatmap (6 SP × 4 folds)
 # ---------------------------------------------------------------------------
 def fig5_agreement_heatmap(pf: pd.DataFrame):
-    folds = ["fold1_apr", "fold2_jul", "fold3_oct", "fold4_dec"]
-    fold_labels = ["Apr\n(Fold 1)", "Jul\n(Fold 2)", "Oct\n(Fold 3)", "Dec\n(Fold 4)"]
+    folds = FOLD_ORDER
+    fold_labels = [FOLD_LABELS[f] for f in folds]
 
     agree_matrix   = np.zeros((len(SP_ORDER), len(folds)))
     stat_labels    = [[""]*len(folds) for _ in SP_ORDER]
@@ -376,8 +389,7 @@ def fig5_agreement_heatmap(pf: pd.DataFrame):
 # Figure 6 — MAE box plots: top-5 models per SP across 4 folds (2×3 grid)
 # ---------------------------------------------------------------------------
 def fig6_mae_boxplots(pf: pd.DataFrame, agg: pd.DataFrame):
-    fig, axes = plt.subplots(2, 3, figsize=(22, 12))
-    axes = axes.flatten()
+    fig, axes = sp_grid((22, 12))
 
     for idx, sp_name in enumerate(SP_ORDER):
         ax     = axes[idx]
@@ -416,14 +428,14 @@ def fig6_mae_boxplots(pf: pd.DataFrame, agg: pd.DataFrame):
 # Figure 7 — Learning curve: stat-best model MAE vs training size
 # ---------------------------------------------------------------------------
 def fig7_learning_curve(pf: pd.DataFrame, agg: pd.DataFrame):
-    # Approximate training days for each fold (train starts 01-02)
+    # Training days per fold, inclusive, implied by the configured boundaries
+    # (89 / 180 / 272 / 333 for the published folds).
+    train_start = pd.Timestamp(CONFIG.train_start)
     TRAIN_DAYS = {
-        "fold1_apr": 89,   # Jan 2 – Mar 31
-        "fold2_jul": 180,  # Jan 2 – Jun 30
-        "fold3_oct": 272,  # Jan 2 – Sep 30
-        "fold4_dec": 333,  # Jan 2 – Nov 30
+        f["name"]: (pd.Timestamp(f["train_end"]) - train_start).days + 1
+        for f in CONFIG.folds
     }
-    folds = ["fold1_apr", "fold2_jul", "fold3_oct", "fold4_dec"]
+    folds = FOLD_ORDER
     x_days = [TRAIN_DAYS[f] for f in folds]
 
     fig, ax = plt.subplots(figsize=(9, 6))

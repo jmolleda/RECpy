@@ -138,16 +138,49 @@ class Config:
                     d["epochs"], d["batch"], d["dropout"])
         return (d["n_input"], d["nodes"], d["epochs"], d["batch"], d["dropout"])
 
+    @property
+    def consumption_columns(self) -> list[str]:
+        """Every consumption column in the multivariate dataset, including supply
+        points this configuration does not analyse.
+
+        The deep-learning models take one consumption series as their target and
+        the calendar and weather columns as features, so every *other* household's
+        consumption must be removed first. Deriving that list from the configured
+        supply points alone is wrong whenever a configuration analyses a subset:
+        the unconfigured households would stay in the frame and the first column
+        -- the training target -- would be the wrong household's.
+        """
+        cols = self.raw.get("data", {}).get("consumption_columns")
+        if cols:
+            return list(cols)
+        return [sp["column"] for sp in self.raw["supply_points"]]
+
     def supply_points_dl(self) -> list[dict[str, Any]]:
         """Supply points enriched with DL hyperparameters and drop_cols, as the
         deep-learning scripts consume them."""
-        cols = [sp["column"] for sp in self.raw["supply_points"]]
+        cols = self.consumption_columns
         out = []
         for sp in self.supply_points:
             entry = dict(sp)
             entry["drop_cols"] = [c for c in cols if c != sp["column"]]
             for arch in ("lstm", "gru", "tcn"):
                 entry[arch] = self.dl_params(sp["id"], arch)
+            out.append(entry)
+        return out
+
+    def supply_points_arima(self) -> list[dict[str, Any]]:
+        """Supply points enriched with the per-supply-point ARIMA and SARIMAX
+        orders, as the statistical scripts consume them. Orders are tuples
+        because statsmodels requires them in that form."""
+        out = []
+        for sp in self.supply_points:
+            a = self.raw["arima"][sp["id"]]
+            entry = dict(sp)
+            entry["col"] = sp["column"]
+            entry["arima_order"] = tuple(a["order"])
+            entry["sarimax_order"] = tuple(a["sarimax_order"])
+            entry["sarimax_seasonal"] = tuple(a["sarimax_seasonal"])
+            entry["sarimax_exog"] = list(a["sarimax_exog"])
             out.append(entry)
         return out
 
@@ -164,6 +197,35 @@ class Config:
     @property
     def model_families(self) -> list[str]:
         return list(self.raw["models"]["families"])
+
+    @property
+    def ml_subset(self) -> list[str]:
+        """Names of the ML regressors to run; empty means all of them."""
+        return list(self.raw["models"].get("ml_subset", []))
+
+    @property
+    def max_test_days(self) -> int:
+        """Cap on test days per fold; 0 means the whole configured window."""
+        return int(self.raw["models"].get("max_test_days", 0))
+
+    def select_models(self, models: dict) -> dict:
+        """Filter a name -> estimator mapping through ml_subset."""
+        keep = self.ml_subset
+        if not keep:
+            return models
+        missing = [k for k in keep if k not in models]
+        if missing:
+            raise KeyError(f"ml_subset names unknown models: {missing}")
+        return {k: models[k] for k in keep}
+
+    def limit_test(self, hourly):
+        """Truncate an hourly test slice (Series, DataFrame or array) to the
+        first max_test_days days; 0 leaves it untouched."""
+        n = self.max_test_days
+        if not n:
+            return hourly
+        rows = n * 24
+        return hourly.iloc[:rows] if hasattr(hourly, "iloc") else hourly[:rows]
 
     def runs(self, family: str) -> bool:
         """True if this configuration includes the given model family."""
@@ -185,6 +247,11 @@ class Config:
 
     # ---- forecasting ----------------------------------------------------
     @property
+    def train_start(self) -> str:
+        """First day of the training history, as YYYY-MM-DD."""
+        return f"{self.year}-{self.raw['forecasting']['train_start']}"
+
+    @property
     def lookback_hours(self) -> int:
         return int(self.raw["forecasting"]["lookback_hours"])
 
@@ -195,6 +262,61 @@ class Config:
     @property
     def random_seed(self) -> int:
         return int(self.raw["forecasting"]["random_seed"])
+
+    # ---- consistency -----------------------------------------------------
+    #: Families code/run_pipeline.py knows how to run.
+    KNOWN_FAMILIES = ("ml", "arima", "dl")
+
+    def validate(self) -> list[str]:
+        """Problems that would make a run fail late or silently; empty if sound.
+
+        Checked before anything expensive starts, because the failures this
+        catches surface hours in: a model family nobody runs, or a supply point
+        whose deployed model was left out of the regressor subset, which only
+        breaks once the scheduling stage looks for its forecasts.
+        """
+        problems = []
+
+        unknown = [f for f in self.model_families if f not in self.KNOWN_FAMILIES]
+        if unknown:
+            problems.append(
+                f"models.families contains unknown {unknown}; "
+                f"known families are {list(self.KNOWN_FAMILIES)}")
+
+        keep = self.ml_subset
+        if keep:
+            for sp in self.raw["supply_points"]:
+                dep = sp.get("deployed_model")
+                if dep and dep not in keep:
+                    problems.append(
+                        f"supply point {sp['id']}: deployed_model {dep!r} is not in "
+                        f"models.ml_subset, so the scheduling stage would find no "
+                        f"forecasts for it")
+
+        known = self.consumption_columns
+        for sp in self.raw["supply_points"]:
+            if sp["column"] not in known:
+                problems.append(
+                    f"supply point {sp['id']}: column {sp['column']!r} is not in "
+                    f"data.consumption_columns, so the deep-learning stage would "
+                    f"train on the wrong column")
+
+        for sp in self.raw["supply_points"]:
+            if not (self.data_dir / sp["history_csv"]).is_file():
+                problems.append(
+                    f"supply point {sp['id']}: history file not found "
+                    f"({self.data_dir / sp['history_csv']})")
+
+        if self.runs("dl"):
+            for sp_id in self.supply_point_ids:
+                if sp_id not in self.raw.get("dl", {}):
+                    problems.append(f"no [dl.{sp_id}] section, but 'dl' is enabled")
+        if self.runs("arima"):
+            for sp_id in self.supply_point_ids:
+                if sp_id not in self.raw.get("arima", {}):
+                    problems.append(f"no [arima.{sp_id}] section, but 'arima' is enabled")
+
+        return problems
 
     # ---- reporting ------------------------------------------------------
     def summary(self) -> str:
@@ -227,3 +349,5 @@ CONFIG = load()
 
 if __name__ == "__main__":
     print(CONFIG.summary())
+    for problem in CONFIG.validate():
+        print(f"  PROBLEM: {problem}")

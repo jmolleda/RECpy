@@ -34,7 +34,7 @@ filterwarnings("ignore")
 
 BASE        = Path(__file__).parent.parent
 METEO_CSV   = "data/consumption_meteo_calendar.csv"
-TRAIN_START = f"{YEAR}-01-02"
+TRAIN_START = CONFIG.train_start
 
 # ---------------------------------------------------------------------------
 # Fold definitions (identical to generate_ml_cv.py)
@@ -47,7 +47,7 @@ FOLDS = [
 # ---------------------------------------------------------------------------
 # Supply-point registry — orders from AIC grid search in exploratory notebooks
 # ---------------------------------------------------------------------------
-SUPPLY_POINTS = CONFIG.supply_points
+SUPPLY_POINTS = CONFIG.supply_points_arima()
 
 # ---------------------------------------------------------------------------
 # Walk-forward helpers
@@ -141,7 +141,8 @@ def run_fold_sp(fold: dict, sp: dict, data: pd.DataFrame, out_dir: Path) -> None
     col   = sp["col"]
 
     train_series = data.loc[TRAIN_START:fold["train_end"], col]
-    test_series  = data.loc[fold["test_start"]:fold["test_end"], col]
+    test_series  = CONFIG.limit_test(
+        data.loc[fold["test_start"]:fold["test_end"], col])
 
     csv_path = out_dir / f"Predictions_C_{sp_id}_{fold['name']}.csv"
     all_df   = pd.read_csv(csv_path, index_col=0, parse_dates=True)
@@ -167,7 +168,8 @@ def run_fold_sp(fold: dict, sp: dict, data: pd.DataFrame, out_dir: Path) -> None
     else:
         exog_cols = sp["sarimax_exog"]
         train_exog = data.loc[TRAIN_START:fold["train_end"], exog_cols]
-        test_exog  = data.loc[fold["test_start"]:fold["test_end"], exog_cols]
+        test_exog  = CONFIG.limit_test(
+            data.loc[fold["test_start"]:fold["test_end"], exog_cols])
 
         print(f"    [{sp_id}] SARIMAX{sp['sarimax_order']}x{sp['sarimax_seasonal']} ({len(test_series)//24} steps) ...")
         preds = walk_forward_sarimax(train_series, test_series,

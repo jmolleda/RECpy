@@ -52,7 +52,7 @@ FOLDS = [
     for f in CONFIG.folds
 ]
 
-TRAIN_START = f"{YEAR}-01-02"
+TRAIN_START = CONFIG.train_start
 
 # ---------------------------------------------------------------------------
 # Supply points
@@ -132,7 +132,7 @@ def run_fold_sp(fold: dict, sp: dict) -> pd.DataFrame:
     )[sp["history_col"]]
 
     s_train = series.loc[TRAIN_START:fold["train_end"]]
-    s_test  = series.loc[fold["test_start"]:fold["test_end"]]
+    s_test  = CONFIG.limit_test(series.loc[fold["test_start"]:fold["test_end"]])
 
     w_train = np.array(np.split(s_train.values, len(s_train) // 24))
     w_test  = np.array(np.split(s_test.values,  len(s_test)  // 24))
@@ -140,7 +140,7 @@ def run_fold_sp(fold: dict, sp: dict) -> pd.DataFrame:
     test_index = pd.date_range(fold["test_start"], periods=len(s_test), freq="h")
     result = pd.DataFrame({"Observed": s_test.values}, index=test_index)
 
-    for name, model in get_models().items():
+    for name, model in CONFIG.select_models(get_models()).items():
         print(f"    [{sp['id']}] {name} ...", end=" ", flush=True)
         try:
             preds = walk_forward(model, w_train, w_test, N_INPUT)

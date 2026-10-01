@@ -40,41 +40,13 @@ OUT_DIR = CONFIG.output_dir("optimization_results")
 OUT_DIR.mkdir(exist_ok=True)
 
 # ── Selected model per supply point (Wilcoxon tournament) ─────────────────────
-SELECTED_MODEL = {
-    "C_SP1": "Support Vector",
-    "C_SP2": "k-Nearest Neighbors",
-    "C_SP3": "Huber",
-    "C_SP4": "Huber",
-    "C_SP5": "Huber",
-    "C_SP6": "Extra Trees",
-}
+SELECTED_MODEL = CONFIG.deployed_models
+SP_KEYS = [sp["column"] for sp in CONFIG.supply_points]
 
 # ── Fold definitions ──────────────────────────────────────────────────────────
 FOLDS = [
-    {
-        "name":   "Fold 1 – Apr",
-        "dir":    "fold1_apr",
-        "suffix": "fold1_apr",
-        "month":  f"{YEAR}-04",
-    },
-    {
-        "name":   "Fold 2 – Jul",
-        "dir":    "fold2_jul",
-        "suffix": "fold2_jul",
-        "month":  f"{YEAR}-07",
-    },
-    {
-        "name":   "Fold 3 – Oct",
-        "dir":    "fold3_oct",
-        "suffix": "fold3_oct",
-        "month":  f"{YEAR}-10",
-    },
-    {
-        "name":   "Fold 4 – Dec",
-        "dir":    "fold4_dec",
-        "suffix": "fold4_dec",
-        "month":  f"{YEAR}-12",
-    },
+    {"name": f["label"], "dir": f["name"], "suffix": f["name"], "month": f["month"]}
+    for f in CONFIG.folds
 ]
 
 # ── Battery / system parameters ───────────────────────────────────────────────
@@ -91,19 +63,11 @@ INITIAL_SOC         = CONFIG.initial_soc
 def load_fold_predictions(fold_dir, suffix):
     """Return (forecasts, observed) — both dicts sp -> Series, clipped >= 0."""
     base = CV_DIR / fold_dir
-    sp_keys = ["C_SP1", "C_SP2", "C_SP3", "C_SP4", "C_SP5", "C_SP6"]
-    sp_files = {
-        "C_SP1": base / f"Predictions_C_SP1_{suffix}.csv",
-        "C_SP2": base / f"Predictions_C_SP2_{suffix}.csv",
-        "C_SP3": base / f"Predictions_C_SP3_{suffix}.csv",
-        "C_SP4": base / f"Predictions_C_SP4_{suffix}.csv",
-        "C_SP5": base / f"Predictions_C_SP5_{suffix}.csv",
-        "C_SP6": base / f"Predictions_C_SP6_{suffix}.csv",
-    }
     forecasts = {}
     observed  = {}
-    for sp in sp_keys:
-        df = pd.read_csv(sp_files[sp], index_col=0, parse_dates=True)
+    for sp in SP_KEYS:
+        df = pd.read_csv(base / f"Predictions_{sp}_{suffix}.csv",
+                         index_col=0, parse_dates=True)
         df.index = pd.to_datetime(df.index)
         forecasts[sp] = df[SELECTED_MODEL[sp]].clip(lower=0)
         observed[sp]  = df["Observed"].clip(lower=0)
@@ -276,10 +240,10 @@ def main():
 
         predictions, observed = load_fold_predictions(fold["dir"], fold["suffix"])
 
-        test_days = pd.date_range(
-            start=fold["month"] + "-01",
-            end=pd.Period(fold["month"]).end_time.date(),
-            freq="D",
+        # Days actually covered by the forecasts, so a shortened test window
+        # (config/quick.toml) schedules only the days it produced.
+        test_days = pd.DatetimeIndex(
+            sorted({t.normalize() for t in next(iter(predictions.values())).index})
         )
 
         soc            = INITIAL_SOC

@@ -1,17 +1,30 @@
 # RECpy - quick demonstration configuration
 #
-# A deliberately reduced configuration that executes in minutes, for smoke-testing
-# the pipeline and for hosted reproducibility platforms with limited compute.
+# A deliberately reduced run of the COMPLETE pipeline - machine learning,
+# statistical and deep-learning forecasting, Wilcoxon model selection and
+# day-ahead scheduling - sized to finish in minutes on one CPU core. It is meant
+# for smoke-testing a checkout and for hosted reproducibility platforms with a
+# limited compute budget.
 #
-# It does NOT reproduce the published results. Deep-learning models are excluded
-# because the published configuration needs on the order of 79 h of CPU time; the
-# full study is reproduced with config/default.toml.
+# What is reduced is the SCALE, not the method: 2 of 6 supply points, 1 of 4
+# folds, the first few days of the test month instead of all of it, and a subset
+# of the 15 regressors. Every model keeps the hyperparameters reported in the
+# companion article, and every stage of the pipeline is exercised.
 #
-# Override with:  RECPY_CONFIG=config/quick.toml python code/generate_ml_cv.py
-# Redirect output: RECPY_OUTPUT_DIR=/results python code/generate_ml_cv.py
+# It is a smoke test, not a result. It does NOT reproduce the published numbers,
+# and the model ranking it produces is not conclusive: five test days are too few
+# for the Wilcoxon tournament, and two supply points too few for the
+# community-level savings to mean anything. Reproducing the published results
+# needs config/default.toml and on the order of a day of CPU time.
+#
+# Expect roughly 4-5 minutes on one core: ML 44 s, ARIMA 46 s, deep learning
+# 174 s, model selection 2 s, figures 4 s, scheduling 1 s.
+#
+# Run the whole pipeline:  RECPY_CONFIG=config/quick.toml python code/run_pipeline.py
+# Redirect output:         RECPY_OUTPUT_DIR=/results python code/run_pipeline.py
 
 name = "quick"
-description = "Reduced demonstration run: ML/statistical models only, one fold, two supply points."
+description = "Reduced demonstration run: all model families, one fold, two supply points, few test days."
 
 # Calendar year of the dataset. Fold boundaries below are month-day only and are
 # combined with this value, so a different year of data needs only this change.
@@ -24,14 +37,28 @@ data = "data"
 # because files written under code/ are discarded at the end of a Reproducible Run.
 output = "code"
 
+[data]
+# Every consumption column present in the multivariate dataset, including
+# supply points this configuration does not analyse. The deep-learning models
+# are univariate in consumption, so all but the target must be removed before
+# scaling; listing them here keeps that correct for a configuration that
+# analyses only some of the supply points.
+consumption_columns = ["C_SP1", "C_SP2", "C_SP3", "C_SP4", "C_SP5", "C_SP6"]
+
 [data_files]
 prices = "prices_cv_folds.csv"
 solar = "solar_generation.csv"
 meteo_calendar = "consumption_meteo_calendar.csv"
 
 [models]
-# Deep learning is excluded: see the note at the top of this file.
-families = ["ml", "arima"]
+families = ["ml", "arima", "dl"]
+# Subset of ML regressors to run; omit or leave empty to run all 15. The two
+# models deployed for SP2 and SP3 are kept, so model selection and scheduling
+# still run on the forecasts the article reports; the rest sample the remaining
+# library families (bagged ensemble, and both gradient-boosting libraries).
+ml_subset = ["Huber", "k-Nearest Neighbors", "Random Forest", "XGBoost", "LightGBM"]
+# Limit each fold's test window to the first N days; 0 means the whole month.
+max_test_days = 5
 
 [[folds]]
 name = "fold1_apr"
@@ -52,15 +79,27 @@ history_csv = "consumption_SP3.csv"
 column = "C_SP3"
 deployed_model = "Huber"
 
-# Deep-learning hyperparameters for SP2, from the architecture search
-# reported in the companion article (Appendix B).
+# Per-supply-point ARIMA and SARIMAX orders, and the exogenous variables
+# selected for SARIMAX, as reported in the companion article.
+[arima.SP2]
+order = [5, 0, 3]
+sarimax_order = [1, 1, 1]
+sarimax_seasonal = [1, 0, 1, 24]
+sarimax_exog = ["temperature_2m (°C)"]
+
+[arima.SP3]
+order = [2, 0, 3]
+sarimax_order = [0, 0, 1]
+sarimax_seasonal = [1, 0, 1, 24]
+sarimax_exog = ["diffuse_radiation_instant (W/m²)"]
+
+# Per-supply-point deep-learning architectures from the search reported in
+# the companion article (Appendix B).
 [dl.SP2]
 lstm = { n_input = 72, nodes = 18, epochs = 20, batch = 64, dropout = 0.0 }
 gru  = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.2 }
 tcn  = { n_input = 72, filters = 25, dilations = [1, 2, 4], epochs = 50, batch = 32, dropout = 0.0 }
 
-# Deep-learning hyperparameters for SP3, from the architecture search
-# reported in the companion article (Appendix B).
 [dl.SP3]
 lstm = { n_input = 144, nodes = 25, epochs = 50, batch = 64, dropout = 0.0 }
 gru  = { n_input = 72, nodes = 25, epochs = 50, batch = 32, dropout = 0.0 }
@@ -78,6 +117,8 @@ initial_soc_fraction = 0.50
 export_limit_kw = 32.0
 
 [forecasting]
+# First day of the training history (month-day, combined with "year").
+train_start = "01-02"
 lookback_hours = 192
 horizon_hours = 24
 random_seed = 123
