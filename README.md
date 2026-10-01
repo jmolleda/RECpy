@@ -157,6 +157,13 @@ python code/timing_analysis.py                     # training / retraining times
   with the `year` key of the active configuration (placeholder `2025`); the
   synthetic dataset uses the same value. Set `year` in your configuration file to
   the calendar year of your data before running on real data.
+- **Equivalence with the archived release**: `code/test_config_equivalence.py`
+  checks that `config/default.toml` resolves to the 108 values that the archived
+  v1.0.0 release — the version that produced the published results — held as
+  literals in its scripts: fold boundaries and labels, supply points, deployed
+  models, deep-learning hyperparameters and feature exclusions, ARIMA/SARIMAX
+  orders and exogenous variables, battery and grid limits, seed and lookback.
+  Run it after changing anything in `config/default.toml`.
 - **Evaluation protocol**: blocked expanding-window cross-validation with four
   seasonal folds (April, July, October, December) and walk-forward 24-hour
   forecasting. ML/statistical models are univariate (192-hour consumption lag);
