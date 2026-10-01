@@ -2,15 +2,19 @@
 
 This repository contains the source code accompanying the paper:
 
-> *A Particularized Forecasting and Optimization Framework for Rural Energy Communities.*
-> Machine Learning with Applications (under review), 2026.
->
-> Author names, affiliations, and citation details are omitted for double-blind
-> peer review, and will be added upon acceptance.
+> Fernando Cosío, Julio Molleda, Fidel Díez, Rubén Usamentiaga.
+> *A particularized forecasting and optimization framework for rural energy communities.*
+> Machine Learning with Applications, vol. 26, art. 101016, December 2026.
+> <https://doi.org/10.1016/j.mlwa.2026.101016>
+
+Please cite that article if you use this software. The exact release that produced
+its results is archived at <https://doi.org/10.5281/zenodo.21129973>.
 
 It provides the full forecasting, statistical model-selection, and day-ahead
 optimization pipeline evaluated on an operational rural energy community (EC) of
-six supply points, anonymized here as **SP1–SP6**.
+six supply points. The supply points are identified as **SP1–SP6** throughout: they
+are anonymized to protect the privacy of the participating households, not as an
+artifact of peer review.
 
 ## Repository layout
 
@@ -35,9 +39,10 @@ pip install -r requirements.txt
 
 ## Data availability
 
-The **raw household consumption series are not included** for privacy reasons;
-they can be requested from the authors (contact details withheld for double-blind
-peer review).
+The **raw household consumption series are not included** for privacy reasons. They
+may be requested from the corresponding author, Julio Molleda
+(<jmolleda@uniovi.es>), and will be shared where the privacy constraints of the
+participating households allow.
 
 So that the pipeline can nonetheless be **run end-to-end**, the `data/` folder
 ships a **fully synthetic** example dataset produced by
