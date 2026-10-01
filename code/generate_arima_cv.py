@@ -24,9 +24,11 @@ from warnings import filterwarnings
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX as SARIMAX_MODEL
 
-# Calendar year of the dataset (placeholder;
-# set this to the actual year of your data files).
-YEAR = 2025
+from recpy_config import CONFIG
+
+# All settings come from the active configuration (config/default.toml unless
+# RECPY_CONFIG points elsewhere); see code/recpy_config.py.
+YEAR = CONFIG.year
 
 filterwarnings("ignore")
 
@@ -38,59 +40,14 @@ TRAIN_START = f"{YEAR}-01-02"
 # Fold definitions (identical to generate_ml_cv.py)
 # ---------------------------------------------------------------------------
 FOLDS = [
-    {"name": "fold1_apr", "train_end": f"{YEAR}-03-31", "test_start": f"{YEAR}-04-01", "test_end": f"{YEAR}-04-30"},
-    {"name": "fold2_jul", "train_end": f"{YEAR}-06-30", "test_start": f"{YEAR}-07-01", "test_end": f"{YEAR}-07-31"},
-    {"name": "fold3_oct", "train_end": f"{YEAR}-09-30", "test_start": f"{YEAR}-10-01", "test_end": f"{YEAR}-10-31"},
-    {"name": "fold4_dec", "train_end": f"{YEAR}-11-30", "test_start": f"{YEAR}-12-01", "test_end": f"{YEAR}-12-31"},
+    {k: f[k] for k in ("name", "train_end", "test_start", "test_end")}
+    for f in CONFIG.folds
 ]
 
 # ---------------------------------------------------------------------------
 # Supply-point registry — orders from AIC grid search in exploratory notebooks
 # ---------------------------------------------------------------------------
-SUPPLY_POINTS = [
-    {
-        "id": "SP1", "col": "C_SP1",
-        "arima_order":        (7, 0, 2),
-        "sarimax_order":      (1, 0, 1),
-        "sarimax_seasonal":   (1, 0, 1, 24),
-        "sarimax_exog":       ["Hour", "diffuse_radiation_instant (W/m\xb2)"],
-    },
-    {
-        "id": "SP2", "col": "C_SP2",
-        "arima_order":        (5, 0, 3),
-        "sarimax_order":      (1, 1, 1),
-        "sarimax_seasonal":   (1, 0, 1, 24),
-        "sarimax_exog":       ["temperature_2m (\xb0C)"],
-    },
-    {
-        "id": "SP3", "col": "C_SP3",
-        "arima_order":        (2, 0, 3),
-        "sarimax_order":      (0, 0, 1),
-        "sarimax_seasonal":   (1, 0, 1, 24),
-        "sarimax_exog":       ["diffuse_radiation_instant (W/m\xb2)"],
-    },
-    {
-        "id": "SP4", "col": "C_SP4",
-        "arima_order":        (3, 0, 3),
-        "sarimax_order":      (1, 1, 1),
-        "sarimax_seasonal":   (0, 0, 1, 24),
-        "sarimax_exog":       ["Hour"],
-    },
-    {
-        "id": "SP5", "col": "C_SP5",
-        "arima_order":        (1, 1, 3),
-        "sarimax_order":      (1, 0, 1),
-        "sarimax_seasonal":   (1, 0, 1, 24),
-        "sarimax_exog":       ["Hour"],
-    },
-{
-        "id": "SP6", "col": "C_SP6",
-        "arima_order":        (3, 0, 2),
-        "sarimax_order":      (1, 0, 1),
-        "sarimax_seasonal":   (1, 1, 1, 24),
-        "sarimax_exog":       ["DoW", "Holidays", "diffuse_radiation_instant (W/m\xb2)"],
-    },
-]
+SUPPLY_POINTS = CONFIG.supply_points
 
 # ---------------------------------------------------------------------------
 # Walk-forward helpers
@@ -239,7 +196,7 @@ if __name__ == "__main__":
         index_col=0, parse_dates=["date_time"]
     )
 
-    out_base = Path(__file__).parent / "cross_validation"
+    out_base = CONFIG.output_dir("cross_validation")
 
     for fold in FOLDS:
         print(f"\n{'='*65}")

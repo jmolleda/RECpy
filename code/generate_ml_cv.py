@@ -32,24 +32,24 @@ from sklearn.ensemble import (
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 
-# Calendar year of the dataset (placeholder;
-# set this to the actual year of your data files).
-YEAR = 2025
+from recpy_config import CONFIG
+
+# All settings come from the active configuration (config/default.toml unless
+# RECPY_CONFIG points elsewhere); see code/recpy_config.py.
+YEAR = CONFIG.year
 
 filterwarnings("ignore")
 
 BASE    = Path(__file__).parent.parent
-RS      = 123
-N_INPUT = 192
+RS      = CONFIG.random_seed
+N_INPUT = CONFIG.lookback_hours
 
 # ---------------------------------------------------------------------------
 # Fold definitions
 # ---------------------------------------------------------------------------
 FOLDS = [
-    {"name": "fold1_apr", "train_end": f"{YEAR}-03-31", "test_start": f"{YEAR}-04-01", "test_end": f"{YEAR}-04-30"},
-    {"name": "fold2_jul", "train_end": f"{YEAR}-06-30", "test_start": f"{YEAR}-07-01", "test_end": f"{YEAR}-07-31"},
-    {"name": "fold3_oct", "train_end": f"{YEAR}-09-30", "test_start": f"{YEAR}-10-01", "test_end": f"{YEAR}-10-31"},
-    {"name": "fold4_dec", "train_end": f"{YEAR}-11-30", "test_start": f"{YEAR}-12-01", "test_end": f"{YEAR}-12-31"},
+    {k: f[k] for k in ("name", "train_end", "test_start", "test_end")}
+    for f in CONFIG.folds
 ]
 
 TRAIN_START = f"{YEAR}-01-02"
@@ -57,26 +57,7 @@ TRAIN_START = f"{YEAR}-01-02"
 # ---------------------------------------------------------------------------
 # Supply points
 # ---------------------------------------------------------------------------
-SUPPLY_POINTS = [
-    {"name": "SP1", "id": "SP1", "folder": "SP1",
-     "history_csv": "data/consumption_SP1.csv",
-     "history_col": "C_SP1"},
-    {"name": "SP2", "id": "SP2", "folder": "SP2",
-     "history_csv": "data/consumption_SP2.csv",
-     "history_col": "C_SP2"},
-    {"name": "SP3", "id": "SP3", "folder": "SP3",
-     "history_csv": "data/consumption_SP3.csv",
-     "history_col": "C_SP3"},
-    {"name": "SP4", "id": "SP4", "folder": "SP4",
-     "history_csv": "data/consumption_SP4.csv",
-     "history_col": "C_SP4"},
-    {"name": "SP5", "id": "SP5", "folder": "SP5",
-     "history_csv": "data/consumption_SP5.csv",
-     "history_col": "C_SP5"},
-{"name": "SP6", "id": "SP6", "folder": "SP6",
-     "history_csv": "data/consumption_SP6.csv",
-     "history_col": "C_SP6"},
-]
+SUPPLY_POINTS = CONFIG.supply_points
 
 # ---------------------------------------------------------------------------
 # ML model registry
@@ -178,7 +159,7 @@ def run_fold_sp(fold: dict, sp: dict) -> pd.DataFrame:
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    out_base = Path(__file__).parent / "cross_validation"
+    out_base = CONFIG.output_dir("cross_validation")
 
     for fold in FOLDS:
         print(f"\n{'='*65}")

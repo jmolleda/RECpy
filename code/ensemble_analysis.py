@@ -19,11 +19,13 @@ import pandas as pd
 from pathlib import Path
 from scipy.optimize import nnls
 
-BASE_CV = Path(__file__).parent / "cross_validation"
+from recpy_config import CONFIG
+
+BASE_CV = CONFIG.output_root / "cross_validation"
 AGG = BASE_CV / "wilcoxon_cv_aggregated.csv"
 OUT = BASE_CV / "robustness" / "ensemble_comparison.csv"
 
-FOLDS = ["fold1_apr", "fold2_jul", "fold3_oct", "fold4_dec"]
+FOLDS = [f["name"] for f in CONFIG.folds]
 SP_IDS = ["SP1", "SP2", "SP3", "SP4", "SP5", "SP6"]
 SP_NAMES = {"SP1": "SP1", "SP2": "SP2", "SP3": "SP3",
             "SP4": "SP4", "SP5": "SP5", "SP6": "SP6"}

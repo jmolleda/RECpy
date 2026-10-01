@@ -24,35 +24,32 @@ from pyomo.environ import (
     Objective, SolverFactory, minimize, value
 )
 
-# Calendar year of the dataset (placeholder;
-# set this to the actual year of your data files).
-YEAR = 2025
+from recpy_config import CONFIG
 
-# ── System parameters (identical to run_optimization_cv.py) ──────────────────
-BATTERY_CAPACITY    = 50.16
-BATTERY_MIN_SOC     = 5.0
-BATTERY_EFFICIENCY  = 0.96
-BATTERY_POWER_LIMIT = 12.0
-BATTERY_DEGRADATION = 0.033
-GRID_EXPORT_LIMIT   = 32.0
-INITIAL_SOC         = BATTERY_CAPACITY * 0.50   # 25.08 kWh
+# All settings come from the active configuration (config/default.toml unless
+# RECPY_CONFIG points elsewhere); see code/recpy_config.py.
+YEAR = CONFIG.year
 
-CV_DIR = Path(__file__).parent / "cross_validation"
-PRICES = Path(__file__).parent.parent / "data" / "prices_cv_folds.csv"
-SOLAR  = Path(__file__).parent.parent / "data" / "solar_generation.csv"
+# ── System parameters ─────────────────────────────────────────────────
+BATTERY_CAPACITY    = CONFIG.battery["capacity_kwh"]
+BATTERY_MIN_SOC     = CONFIG.battery["min_soc_kwh"]
+BATTERY_EFFICIENCY  = CONFIG.battery["efficiency"]
+BATTERY_POWER_LIMIT = CONFIG.battery["power_limit_kw"]
+BATTERY_DEGRADATION = CONFIG.battery["degradation_eur_per_kwh"]
+GRID_EXPORT_LIMIT   = CONFIG.grid_export_limit
+INITIAL_SOC         = CONFIG.initial_soc
 
-SP_KEYS = ["C_SP1", "C_SP2", "C_SP3", "C_SP4", "C_SP5", "C_SP6"]
+CV_DIR = CONFIG.output_root / "cross_validation"
+PRICES = CONFIG.data_file("prices")
+SOLAR  = CONFIG.data_file("solar")
 
-WILCOXON_MODEL = {
-    "C_SP1": "Support Vector", "C_SP2": "k-Nearest Neighbors", "C_SP3": "Huber",
-    "C_SP4": "Huber", "C_SP5": "Huber", "C_SP6": "Extra Trees",
-}
+SP_KEYS = [sp["column"] for sp in CONFIG.supply_points]
+
+WILCOXON_MODEL = CONFIG.deployed_models
 
 FOLDS = [
-    {"name": "Fold 1 – Apr", "dir": "fold1_apr", "suffix": "fold1_apr", "month": f"{YEAR}-04"},
-    {"name": "Fold 2 – Jul", "dir": "fold2_jul", "suffix": "fold2_jul", "month": f"{YEAR}-07"},
-    {"name": "Fold 3 – Oct", "dir": "fold3_oct", "suffix": "fold3_oct", "month": f"{YEAR}-10"},
-    {"name": "Fold 4 – Dec", "dir": "fold4_dec", "suffix": "fold4_dec", "month": f"{YEAR}-12"},
+    {"name": f["label"], "dir": f["name"], "suffix": f["name"], "month": f["month"]}
+    for f in CONFIG.folds
 ]
 
 

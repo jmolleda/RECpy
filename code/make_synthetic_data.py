@@ -19,9 +19,11 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-YEAR = 2025                 # must match YEAR in the analysis scripts
+from recpy_config import CONFIG
+
+YEAR = CONFIG.year          # taken from the active configuration
 RNG = np.random.default_rng(123)
-OUT = Path(__file__).parent.parent / "data"
+OUT = CONFIG.data_dir
 OUT.mkdir(exist_ok=True)
 
 idx = pd.date_range(f"{YEAR}-01-01", f"{YEAR}-12-31 23:00", freq="h")

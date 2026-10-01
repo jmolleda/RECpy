@@ -12,10 +12,12 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from pathlib import Path
 
+from recpy_config import CONFIG
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-BASE_CV  = Path(__file__).parent / "cross_validation"
+BASE_CV  = CONFIG.output_root / "cross_validation"
 FIG_DIR  = BASE_CV / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 

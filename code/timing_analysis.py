@@ -23,11 +23,13 @@ from pathlib import Path
 import generate_ml_cv as ml
 from generate_ml_cv import to_supervised as ml_to_supervised, get_models, N_INPUT, TRAIN_START, BASE
 
+from recpy_config import CONFIG
+
 # Calendar year of the dataset (placeholder;
 # set this to the actual year of your data files).
-YEAR = 2025
+YEAR = CONFIG.year
 
-OUT = Path(__file__).parent / "cross_validation" / "robustness" / "training_time.csv"
+OUT = CONFIG.output_dir("cross_validation", "robustness") / "training_time.csv"
 TRAIN_END = f"{YEAR}-11-30"          # fold 4 = largest expanding window
 
 DEPLOYED = {"SP1": "Support Vector", "SP2": "k-Nearest Neighbors", "SP3": "Huber",

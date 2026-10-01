@@ -24,14 +24,16 @@ from keras.models import Sequential
 from keras.layers import Dense, LSTM, GRU, Dropout
 from tcn import TCN
 
-# Calendar year of the dataset (placeholder;
-# set this to the actual year of your data files).
-YEAR = 2025
+from recpy_config import CONFIG
+
+# All settings come from the active configuration (config/default.toml unless
+# RECPY_CONFIG points elsewhere); see code/recpy_config.py.
+YEAR = CONFIG.year
 
 filterwarnings("ignore")
 
 os.environ["PYTHONHASHSEED"] = "0"
-RS = 123
+RS = CONFIG.random_seed
 random.seed(RS)
 np.random.seed(RS)
 tf.random.set_seed(RS)
@@ -44,10 +46,8 @@ TRAIN_START = f"{YEAR}-01-02"
 # Fold definitions (identical to generate_ml_cv.py)
 # ---------------------------------------------------------------------------
 FOLDS = [
-    {"name": "fold1_apr", "train_end": f"{YEAR}-03-31", "test_start": f"{YEAR}-04-01", "test_end": f"{YEAR}-04-30"},
-    {"name": "fold2_jul", "train_end": f"{YEAR}-06-30", "test_start": f"{YEAR}-07-01", "test_end": f"{YEAR}-07-31"},
-    {"name": "fold3_oct", "train_end": f"{YEAR}-09-30", "test_start": f"{YEAR}-10-01", "test_end": f"{YEAR}-10-31"},
-    {"name": "fold4_dec", "train_end": f"{YEAR}-11-30", "test_start": f"{YEAR}-12-01", "test_end": f"{YEAR}-12-31"},
+    {k: f[k] for k in ("name", "train_end", "test_start", "test_end")}
+    for f in CONFIG.folds
 ]
 
 # ---------------------------------------------------------------------------
@@ -56,50 +56,7 @@ FOLDS = [
 # LSTM/GRU params: (n_input, nodes, epochs, batch, dropout)
 # TCN params:      (n_input, filters, dilations, epochs, batch, dropout)
 # ---------------------------------------------------------------------------
-SUPPLY_POINTS = [
-    {
-        "id": "SP1", "folder": "SP1",
-        "drop_cols": ["C_SP2", "C_SP3", "C_SP4", "C_SP5", "C_SP6"],
-        "lstm": (72,  30, 50, 32, 0.0),
-        "gru":  (192, 25, 20, 32, 0.0),
-        "tcn":  (144, 18, [1, 2, 4], 20, 32, 0.0),
-    },
-    {
-        "id": "SP2", "folder": "SP2",
-        "drop_cols": ["C_SP1", "C_SP3", "C_SP4", "C_SP5", "C_SP6"],
-        "lstm": (72,  18, 20, 64, 0.0),
-        "gru":  (72,  25, 50, 32, 0.2),
-        "tcn":  (72,  25, [1, 2, 4], 50, 32, 0.0),
-    },
-    {
-        "id": "SP3", "folder": "SP3",
-        "drop_cols": ["C_SP1", "C_SP2", "C_SP4", "C_SP5", "C_SP6"],
-        "lstm": (144, 25, 50, 64, 0.0),
-        "gru":  (72,  25, 50, 32, 0.0),
-        "tcn":  (72,  25, [1, 2, 4], 50, 32, 0.0),
-    },
-    {
-        "id": "SP4", "folder": "SP4",
-        "drop_cols": ["C_SP1", "C_SP2", "C_SP3", "C_SP5", "C_SP6"],
-        "lstm": (72,  30, 50, 32, 0.0),
-        "gru":  (144, 25, 50, 64, 0.0),
-        "tcn":  (192, 30, [1, 2, 4, 8], 50, 64, 0.2),
-    },
-    {
-        "id": "SP5", "folder": "SP5",
-        "drop_cols": ["C_SP1", "C_SP2", "C_SP3", "C_SP4", "C_SP6"],
-        "lstm": (72,  25, 50, 32, 0.2),
-        "gru":  (144, 25, 50, 32, 0.0),
-        "tcn":  (72,  18, [1, 2, 4], 20, 32, 0.0),
-    },
-{
-        "id": "SP6", "folder": "SP6",
-        "drop_cols": ["C_SP1", "C_SP2", "C_SP3", "C_SP4", "C_SP5"],
-        "lstm": (72,  25, 20, 32, 0.0),
-        "gru":  (72,  18, 20, 32, 0.0),
-        "tcn":  (144, 25, [1, 2, 4, 8], 50, 32, 0.0),
-    },
-]
+SUPPLY_POINTS = CONFIG.supply_points
 
 # ---------------------------------------------------------------------------
 # Core helpers (identical to generate_dl_predictions.py)
@@ -254,7 +211,7 @@ def run_fold_sp(fold: dict, sp: dict, out_dir: Path) -> None:
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    out_base = Path(__file__).parent / "cross_validation"
+    out_base = CONFIG.output_dir("cross_validation")
 
     for fold in FOLDS:
         print(f"\n{'='*65}")

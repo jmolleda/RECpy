@@ -21,11 +21,13 @@ from scipy import stats
 from itertools import permutations
 from pathlib import Path
 
+from recpy_config import CONFIG
+
 # Calendar year of the dataset (anonymized placeholder;
 # set this to the actual year of your data files).
-YEAR = 2025
+YEAR = CONFIG.year
 
-BASE_CV = Path(__file__).parent / "cross_validation"
+BASE_CV = CONFIG.output_root / "cross_validation"
 BASE_CV.mkdir(parents=True, exist_ok=True)
 ALPHA   = 0.05
 

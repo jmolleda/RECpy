@@ -20,6 +20,8 @@ import numpy as np
 from scipy import stats
 from pathlib import Path
 
+from recpy_config import CONFIG
+
 BASE = Path(__file__).parent.parent
 
 SUPPLY_POINTS = [
@@ -163,6 +165,6 @@ if __name__ == "__main__":
     print()
     print(df[display_cols].to_string(index=False))
 
-    out_path = Path(__file__).parent / "wilcoxon_results.csv"
+    out_path = CONFIG.output_root / "wilcoxon_results.csv"
     df[display_cols].to_csv(out_path, index=False)
     print(f"\nResults saved to: {out_path}")

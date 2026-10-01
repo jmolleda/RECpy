@@ -26,13 +26,15 @@ from scipy import stats
 from itertools import combinations
 from pathlib import Path
 
-BASE_CV = Path(__file__).parent / "cross_validation"
+from recpy_config import CONFIG
+
+BASE_CV = CONFIG.output_root / "cross_validation"
 OUT_DIR = BASE_CV / "robustness"
 OUT_DIR.mkdir(exist_ok=True)
 ALPHA = 0.05
 DM_H = 24  # day-ahead forecast horizon (hours) for the HAC lag
 
-FOLDS = ["fold1_apr", "fold2_jul", "fold3_oct", "fold4_dec"]
+FOLDS = [f["name"] for f in CONFIG.folds]
 SP_IDS = ["SP1", "SP2", "SP3", "SP4", "SP5", "SP6"]
 SP_NAMES = {"SP1": "SP1", "SP2": "SP2", "SP3": "SP3",
             "SP4": "SP4", "SP5": "SP5", "SP6": "SP6"}

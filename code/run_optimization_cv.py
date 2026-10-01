@@ -25,16 +25,18 @@ from pyomo.environ import (
     Objective, SolverFactory, minimize, value
 )
 
+from recpy_config import CONFIG
+
 # Calendar year of the dataset (placeholder;
 # set this to the actual year of your data files).
-YEAR = 2025
+YEAR = CONFIG.year
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 ROOT    = Path(__file__).parent.parent
-CV_DIR  = Path(__file__).parent / "cross_validation"
-PRICES  = Path(__file__).parent.parent / "data" / "prices_cv_folds.csv"
-SOLAR   = Path(__file__).parent.parent / "data" / "solar_generation.csv"
-OUT_DIR = Path(__file__).parent / "optimization_results"
+CV_DIR  = CONFIG.output_root / "cross_validation"
+PRICES  = CONFIG.data_file("prices")
+SOLAR   = CONFIG.data_file("solar")
+OUT_DIR = CONFIG.output_dir("optimization_results")
 OUT_DIR.mkdir(exist_ok=True)
 
 # ── Selected model per supply point (Wilcoxon tournament) ─────────────────────
@@ -76,13 +78,13 @@ FOLDS = [
 ]
 
 # ── Battery / system parameters ───────────────────────────────────────────────
-BATTERY_CAPACITY    = 50.16
-BATTERY_MIN_SOC     = 5.0
-BATTERY_EFFICIENCY  = 0.96
-BATTERY_POWER_LIMIT = 12.0
-BATTERY_DEGRADATION = 0.033
-GRID_EXPORT_LIMIT   = 32.0
-INITIAL_SOC         = BATTERY_CAPACITY * 0.50   # 25.08 kWh
+BATTERY_CAPACITY    = CONFIG.battery["capacity_kwh"]
+BATTERY_MIN_SOC     = CONFIG.battery["min_soc_kwh"]
+BATTERY_EFFICIENCY  = CONFIG.battery["efficiency"]
+BATTERY_POWER_LIMIT = CONFIG.battery["power_limit_kw"]
+BATTERY_DEGRADATION = CONFIG.battery["degradation_eur_per_kwh"]
+GRID_EXPORT_LIMIT   = CONFIG.grid_export_limit
+INITIAL_SOC         = CONFIG.initial_soc
 
 
 # ── Data loaders ──────────────────────────────────────────────────────────────

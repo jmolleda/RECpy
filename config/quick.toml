@@ -1,0 +1,69 @@
+# RECpy - quick demonstration configuration
+#
+# A deliberately reduced configuration that executes in minutes, for smoke-testing
+# the pipeline and for hosted reproducibility platforms with limited compute.
+#
+# It does NOT reproduce the published results. Deep-learning models are excluded
+# because the published configuration needs on the order of 79 h of CPU time; the
+# full study is reproduced with config/default.toml.
+#
+# Override with:  RECPY_CONFIG=config/quick.toml python code/generate_ml_cv.py
+# Redirect output: RECPY_OUTPUT_DIR=/results python code/generate_ml_cv.py
+
+name = "quick"
+description = "Reduced demonstration run: ML/statistical models only, one fold, two supply points."
+
+# Calendar year of the dataset. Fold boundaries below are month-day only and are
+# combined with this value, so a different year of data needs only this change.
+year = 2025
+
+[paths]
+# Relative to the repository root; absolute paths are also accepted.
+data = "data"
+# Root for generated outputs. Code Ocean capsules set RECPY_OUTPUT_DIR=/results,
+# because files written under code/ are discarded at the end of a Reproducible Run.
+output = "code"
+
+[data_files]
+prices = "prices_cv_folds.csv"
+solar = "solar_generation.csv"
+meteo_calendar = "consumption_meteo_calendar.csv"
+
+[models]
+# Deep learning is excluded: see the note at the top of this file.
+families = ["ml", "arima"]
+
+[[folds]]
+name = "fold1_apr"
+label = "Fold 1 – Apr"
+train_end = "03-31"
+test_start = "04-01"
+test_end = "04-30"
+
+[[supply_points]]
+id = "SP2"
+history_csv = "consumption_SP2.csv"
+column = "C_SP2"
+deployed_model = "k-Nearest Neighbors"
+
+[[supply_points]]
+id = "SP3"
+history_csv = "consumption_SP3.csv"
+column = "C_SP3"
+deployed_model = "Huber"
+
+[battery]
+capacity_kwh = 50.16
+min_soc_kwh = 5.0
+efficiency = 0.96
+power_limit_kw = 12.0
+degradation_eur_per_kwh = 0.033
+initial_soc_fraction = 0.50
+
+[grid]
+export_limit_kw = 32.0
+
+[forecasting]
+lookback_hours = 192
+horizon_hours = 24
+random_seed = 123

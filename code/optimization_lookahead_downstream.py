@@ -29,7 +29,9 @@ from pyomo.environ import SolverFactory
 
 import opt_core as oc
 
-OUT = Path(__file__).parent / "optimization_results"
+from recpy_config import CONFIG
+
+OUT = CONFIG.output_dir("optimization_results")
 DEG_MODEL, DEG_MULT = "gross", 1.0
 
 

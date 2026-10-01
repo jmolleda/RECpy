@@ -23,6 +23,8 @@ from scipy import stats
 from itertools import permutations
 from pathlib import Path
 
+from recpy_config import CONFIG
+
 BASE  = Path(__file__).parent.parent 
 ALPHA = 0.05
 
@@ -268,6 +270,6 @@ if __name__ == "__main__":
                 "RMSE-selected": model == r["rmse_best"],
                 "Stat-selected": model == r["stat_best"],
             })
-    out = Path(__file__).parent / "wilcoxon_model_selection_results.csv"
+    out = CONFIG.output_root / "wilcoxon_model_selection_results.csv"
     pd.DataFrame(rows).to_csv(out, index=False)
     print(f"\nDetailed results saved to: {out}")
