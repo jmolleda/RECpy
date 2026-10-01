@@ -1,0 +1,14 @@
+# Python 3.12
+# Pinned versions used to produce the results in the paper.
+numpy==2.4.6
+pandas==2.2.3
+scipy==1.17.1
+scikit-learn==1.8.0
+xgboost==3.2.0
+lightgbm==4.6.0
+statsmodels==0.14.6
+tensorflow==2.21.0
+keras-tcn==3.5.6
+pyomo==6.10.0
+highspy==1.14.0
+matplotlib
