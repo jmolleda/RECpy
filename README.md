@@ -164,6 +164,14 @@ python code/timing_analysis.py                     # training / retraining times
   models, deep-learning hyperparameters and feature exclusions, ARIMA/SARIMAX
   orders and exogenous variables, battery and grid limits, seed and lookback.
   Run it after changing anything in `config/default.toml`.
+- **Bit-for-bit reruns**: every model is exactly reproducible except Random Forest
+  and Extra Trees, which are fitted with `n_jobs=-1` and so average their trees in
+  whatever order the threads finish. Their predictions move by about one machine
+  epsilon (~1e-16) between runs of identical code; `n_jobs=1` removes the variation
+  at a large cost in time. Re-running therefore reproduces 20 of the 22 prediction
+  columns byte for byte and those two to ~1e-15 relative. No reported figure, model
+  ranking or saving depends on the difference — the Wilcoxon outputs computed from
+  these columns are themselves byte-identical across runs.
 - **Evaluation protocol**: blocked expanding-window cross-validation with four
   seasonal folds (April, July, October, December) and walk-forward 24-hour
   forecasting. ML/statistical models are univariate (192-hour consumption lag);
