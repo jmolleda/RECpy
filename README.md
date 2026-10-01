@@ -18,7 +18,7 @@ six supply points, anonymized here as **SP1–SP6**.
 code/    all analysis scripts (+ make_synthetic_data.py)
 data/    a fully synthetic example dataset (see below)
 requirements.txt
-LICENSE  (CC BY 4.0)
+LICENSE  (MIT)
 ```
 
 Running the scripts creates their own output folders under `code/`
@@ -141,6 +141,9 @@ python code/timing_analysis.py         # training / retraining times
 
 ## License
 
-Released under **Creative Commons Attribution 4.0 International (CC BY 4.0)**; see
-`LICENSE`. Author, affiliation, and citation information will be added upon
-acceptance.
+Released under the **MIT License**; see `LICENSE`.
+
+Version 1.0.0 — the release archived at
+[10.5281/zenodo.21129973](https://doi.org/10.5281/zenodo.21129973), which produced the
+results published in *Machine Learning with Applications* — was released under CC BY 4.0.
+From this version onward the software is MIT-licensed.
