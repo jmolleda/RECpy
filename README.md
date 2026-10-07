@@ -25,6 +25,9 @@ This repository contains the source code accompanying the paper:
 Please cite that article if you use this software. The exact release that produced
 its results is archived at <https://doi.org/10.5281/zenodo.21129973>.
 
+This release, v2.0.0, is archived at <https://doi.org/10.5281/zenodo.23208125>, and
+<https://doi.org/10.5281/zenodo.21129972> always resolves to the most recent release.
+
 It provides the full forecasting, statistical model-selection, and day-ahead
 optimization pipeline evaluated on an operational rural energy community (EC) of
 six supply points. The supply points are identified as **SP1–SP6** throughout: they

@@ -6,7 +6,11 @@
   "version": "2.0.0",
   "license": "https://spdx.org/licenses/MIT",
   "codeRepository": "https://github.com/jmolleda/RECpy",
-  "identifier": "https://doi.org/10.5281/zenodo.21129972",
+  "identifier": [
+    "https://doi.org/10.5281/zenodo.23208125",
+    "https://doi.org/10.5281/zenodo.21129972"
+  ],
+  "datePublished": "2026-10-07",
   "applicationCategory": "Energy systems",
   "developmentStatus": "active",
   "programmingLanguage": [

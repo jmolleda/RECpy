@@ -8,7 +8,7 @@ All notable changes to this project are documented here. Versions follow
 [Semantic Versioning](https://semver.org/); each released version is archived on
 Zenodo.
 
-## [2.0.0] — 2026-10-05
+## [2.0.0] — 2026-10-07
 
 **This version computes the same results as v1.0.0**: the pipeline was made
 configurable and reusable, not changed. See *Verification* below.
