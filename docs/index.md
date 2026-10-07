@@ -17,6 +17,10 @@ statistical test rather than by picking the lowest error. The winner's forecasts
 then drive a linear programme that schedules the shared battery against hourly
 prices, and the result is costed against what actually happened.
 
+![RECpy's local web front end](assets/screenshot.png)
+
+*The optional local interface, after a run on the synthetic dataset that ships with the repository — not the published results.*
+
 ## What it does
 
 <div class="grid cards" markdown>

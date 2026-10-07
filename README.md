@@ -11,6 +11,10 @@
 
 **Documentation: <https://jmolleda.github.io/RECpy/>**
 
+![RECpy's local web front end](docs/assets/screenshot.png)
+
+*The optional local interface, after a run on the synthetic dataset that ships with the repository.*
+
 This repository contains the source code accompanying the paper:
 
 > F. Cosío, J. Molleda, F. Díez, R. Usamentiaga.
