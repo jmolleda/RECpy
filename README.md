@@ -1,6 +1,6 @@
 <img src="app/assets/icon.png" alt="" align="right" width="110">
 
-# A Particularized Forecasting and Optimization Framework for Rural Energy Communities — Code
+# RECpy: particularized demand forecasting and day-ahead scheduling for energy communities
 
 [![tests](https://github.com/jmolleda/RECpy/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/jmolleda/RECpy/actions/workflows/tests.yml)
 [![python 3.12](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/release/python-3120/)
@@ -9,11 +9,11 @@
 [![repo status: active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![docs](https://img.shields.io/badge/docs-jmolleda.github.io%2FRECpy-blue)](https://jmolleda.github.io/RECpy/)
 
-**Documentation: <https://jmolleda.github.io/RECpy/>**
+RECpy forecasts the next-day electricity demand of each consumer in an energy
+community and schedules a shared battery against day-ahead prices. Every metered
+consumer gets its own forecasting model, selected on its own data.
 
 ![RECpy's local web front end](docs/assets/screenshot.png)
-
-*The optional local interface, after a run on the synthetic dataset that ships with the repository.*
 
 This repository contains the source code accompanying the paper:
 
