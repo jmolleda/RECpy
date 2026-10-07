@@ -1,0 +1,6 @@
+# Extra dependencies for the local web front end (app/recpy_app.py).
+# The core pipeline does not need these; keeping them separate keeps the
+# reproducibility-capsule image small.
+-r requirements.txt
+streamlit==1.64.0
+tomli-w==1.2.0

@@ -1,0 +1,14 @@
+# Keep the interface on this machine. The consumption series it reads are
+# personal data, and Streamlit otherwise binds every interface and advertises
+# an external URL.
+[server]
+address = "127.0.0.1"
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+# Streamlit's default accent is red, which reads as a warning on selected items
+# that are simply chosen. This is the amber of the forecast curve in the icon.
+[theme]
+primaryColor = "#E9A338"
