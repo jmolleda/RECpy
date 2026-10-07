@@ -1,0 +1,93 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "name": "RECpy",
+  "description": "Particularized demand forecasting and day-ahead battery scheduling for energy communities. Each consumer is given its own forecasting model, selected by a Wilcoxon signed-rank tournament over fifteen machine-learning regressors, ARIMA and SARIMAX, and three deep-learning architectures; the selected forecasts drive a linear programme that schedules a shared battery against day-ahead prices.",
+  "version": "2.0.0",
+  "license": "https://spdx.org/licenses/MIT",
+  "codeRepository": "https://github.com/jmolleda/RECpy",
+  "identifier": "https://doi.org/10.5281/zenodo.21129972",
+  "applicationCategory": "Energy systems",
+  "developmentStatus": "active",
+  "programmingLanguage": [
+    {
+      "@type": "ComputerLanguage",
+      "name": "Python",
+      "version": "3.12"
+    }
+  ],
+  "runtimePlatform": "Python 3.12",
+  "operatingSystem": [
+    "Linux",
+    "macOS",
+    "Windows"
+  ],
+  "keywords": [
+    "energy communities",
+    "load forecasting",
+    "model selection",
+    "battery scheduling",
+    "linear programming",
+    "reproducibility"
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Julio",
+      "familyName": "Molleda",
+      "email": "jmolleda@uniovi.es",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "University of Oviedo"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Fernando",
+      "familyName": "Cosío",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "CTIC Technology Center"
+      }
+    }
+  ],
+  "maintainer": {
+    "@type": "Person",
+    "givenName": "Julio",
+    "familyName": "Molleda",
+    "email": "jmolleda@uniovi.es",
+    "affiliation": {
+      "@type": "Organization",
+      "name": "University of Oviedo"
+    }
+  },
+  "referencePublication": {
+    "@type": "ScholarlyArticle",
+    "name": "A particularized forecasting and optimization framework for rural energy communities",
+    "identifier": "https://doi.org/10.1016/j.mlwa.2026.101016",
+    "datePublished": "2026-12",
+    "isPartOf": {
+      "@type": "PublicationIssue",
+      "issueNumber": "26",
+      "isPartOf": {
+        "@type": "Periodical",
+        "name": "Machine Learning with Applications"
+      }
+    }
+  },
+  "softwareRequirements": [
+    "numpy==2.4.6",
+    "pandas==2.2.3",
+    "scipy==1.17.1",
+    "scikit-learn==1.8.0",
+    "xgboost==3.2.0",
+    "lightgbm==4.6.0",
+    "statsmodels==0.14.6",
+    "tensorflow==2.21.0",
+    "keras-tcn==3.5.6",
+    "pyomo==6.10.0",
+    "highspy==1.14.0",
+    "matplotlib"
+  ],
+  "readme": "https://github.com/jmolleda/RECpy/blob/main/README.md"
+}

@@ -1,0 +1,68 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite both the software itself and the article
+  that introduced the method.
+title: "RECpy: particularized demand forecasting and day-ahead scheduling for energy communities"
+abstract: >-
+  RECpy forecasts next-day electricity demand for each consumer in an energy
+  community and schedules a shared battery against day-ahead prices. Each
+  consumer is given its own forecasting model, selected from fifteen
+  machine-learning regressors, ARIMA and SARIMAX, and three deep-learning
+  architectures by a Wilcoxon signed-rank tournament with multiple-comparison
+  control. The selected forecasts drive a linear programme solved with Pyomo and
+  HiGHS. Every setting lives in a configuration file, so adapting the framework
+  to another community requires no code changes.
+type: software
+license: MIT
+version: 2.0.0
+repository-code: "https://github.com/jmolleda/RECpy"
+url: "https://github.com/jmolleda/RECpy"
+keywords:
+  - energy communities
+  - load forecasting
+  - model selection
+  - battery scheduling
+  - linear programming
+  - reproducibility
+authors:
+  - family-names: "Molleda"
+    given-names: "Julio"
+    email: "jmolleda@uniovi.es"
+    affiliation: "University of Oviedo"
+  - family-names: "Cosío"
+    given-names: "Fernando"
+    affiliation: "CTIC Technology Center"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21129972"
+    description: >-
+      Concept DOI, resolving to the most recent archived release of the
+      software.
+  - type: doi
+    value: "10.5281/zenodo.21129973"
+    description: >-
+      Version DOI of release v1.0.0, the release that produced the published
+      results.
+preferred-citation:
+  type: article
+  title: "A particularized forecasting and optimization framework for rural energy communities"
+  journal: "Machine Learning with Applications"
+  volume: 26
+  start: 101016
+  year: 2026
+  month: 12
+  doi: "10.1016/j.mlwa.2026.101016"
+  authors:
+    - family-names: "Cosío"
+      given-names: "Fernando"
+      affiliation: "CTIC Technology Center"
+    - family-names: "Molleda"
+      given-names: "Julio"
+      email: "jmolleda@uniovi.es"
+      affiliation: "University of Oviedo"
+    - family-names: "Díez"
+      given-names: "Fidel"
+      affiliation: "CTIC Technology Center"
+    - family-names: "Usamentiaga"
+      given-names: "Rubén"
+      affiliation: "University of Oviedo"

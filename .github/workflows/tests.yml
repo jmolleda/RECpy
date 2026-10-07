@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install the pinned dependencies
+        # The same file the article and the capsule name, so a failure here is
+        # a real one: the declared environment no longer installs.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest tomli-w
+
+      - name: Check the example dataset
+        run: python code/check_data.py
+
+      - name: Run the tests
+        run: python -m pytest -v
+
+      - name: Confirm the configuration still matches the archived release
+        run: python code/test_config_equivalence.py
