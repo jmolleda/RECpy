@@ -11,7 +11,7 @@ copyright: >-
 
 theme:
   name: material
-  logo: assets/icon.png
+  logo: assets/icon-badge.png
   favicon: assets/icon.png
   palette:
     # The interface's own accent, so the documentation and the tool match.
