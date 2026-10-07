@@ -1,0 +1,59 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Publishing to Pages needs these; nothing else in the workflow writes.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; let a running one finish rather than cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install MkDocs
+        run: pip install -r requirements-docs.txt
+
+      - name: Regenerate the changelog page
+        run: python docs/build_changelog.py
+
+      - name: Fail if the changelog page was out of date
+        # The page is generated, so a difference here means CHANGELOG.md was
+        # edited without rebuilding it. The site would still be correct, but the
+        # committed copy would not, so say so rather than hiding it.
+        run: git diff --exit-code docs/changelog.md
+
+      - name: Build
+        run: mkdocs build --strict
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

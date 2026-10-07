@@ -1,0 +1,7 @@
+/* The accent of the interface and the icon, so the three match. */
+:root {
+  --md-primary-fg-color:        #2f4a63;
+  --md-primary-fg-color--light: #3f5f7d;
+  --md-primary-fg-color--dark:  #243a4e;
+  --md-accent-fg-color:         #e9a338;
+}

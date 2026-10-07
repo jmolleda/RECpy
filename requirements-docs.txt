@@ -1,0 +1,4 @@
+# Documentation site (https://jmolleda.github.io/RECpy/).
+# Not needed to run the pipeline or the front end.
+mkdocs==1.6.1
+mkdocs-material==9.7.6
