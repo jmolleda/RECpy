@@ -40,8 +40,45 @@ OUT_DIR = CONFIG.output_dir("optimization_results")
 OUT_DIR.mkdir(exist_ok=True)
 
 # ── Selected model per supply point (Wilcoxon tournament) ─────────────────────
-SELECTED_MODEL = CONFIG.deployed_models
 SP_KEYS = [sp["column"] for sp in CONFIG.supply_points]
+
+
+def selected_models() -> dict:
+    """Model whose forecasts drive the schedule, per supply point.
+
+    Taken from the configuration where a deployed model is recorded, as it is
+    for the published community. A supply point without one falls back to the
+    winner of the Wilcoxon tournament just computed for it, so a community that
+    has not yet chosen does not have to: the statistical comparison decides, and
+    the choice is printed rather than silently assumed.
+    """
+    chosen = dict(CONFIG.deployed_models)
+    missing = [sp for sp in SP_KEYS if sp not in chosen]
+    if not missing:
+        return chosen
+
+    agg = CV_DIR / "wilcoxon_cv_aggregated.csv"
+    if not agg.is_file():
+        raise SystemExit(
+            f"No deployed model is configured for {', '.join(missing)}, and "
+            f"there is no {agg.name} to take one from. Run wilcoxon_cv.py "
+            f"first, or set deployed_model for those supply points.")
+
+    ranking = pd.read_csv(agg)
+    sp_id = {sp["column"]: sp["id"] for sp in CONFIG.supply_points}
+    for column in missing:
+        rows = ranking[ranking["supply_point"] == sp_id[column]]
+        if rows.empty:
+            raise SystemExit(f"{agg.name} has no ranking for {column}.")
+        best = rows.sort_values(["mean_net_wins", "mean_MAE"],
+                                ascending=[False, True]).iloc[0]
+        chosen[column] = best["model"]
+        print(f"  {column}: no model configured, using the tournament winner "
+              f"{best['model']!r} (mean net wins {best['mean_net_wins']:.1f})")
+    return chosen
+
+
+SELECTED_MODEL = selected_models()
 
 # ── Fold definitions ──────────────────────────────────────────────────────────
 FOLDS = [
@@ -66,7 +103,7 @@ def load_fold_predictions(fold_dir, suffix):
     forecasts = {}
     observed  = {}
     for sp in SP_KEYS:
-        df = pd.read_csv(base / f"Predictions_{sp}_{suffix}.csv",
+        df = pd.read_csv(CONFIG.prediction_path(sp, suffix),
                          index_col=0, parse_dates=True)
         df.index = pd.to_datetime(df.index)
         forecasts[sp] = df[SELECTED_MODEL[sp]].clip(lower=0)
@@ -75,18 +112,18 @@ def load_fold_predictions(fold_dir, suffix):
 
 
 def load_prices():
-    df = pd.read_csv(PRICES, index_col="datetime", parse_dates=True)
+    df = pd.read_csv(PRICES, index_col=CONFIG.market_time_col, parse_dates=True)
     df.index = pd.to_datetime(df.index)   # naive local datetime — date matches local calendar
     return df
 
 
 def load_solar():
-    df = pd.read_csv(SOLAR, index_col="datetime", parse_dates=True)
+    df = pd.read_csv(SOLAR, index_col=CONFIG.market_time_col, parse_dates=True)
     if df.index.tz is None:
         df.index = df.index.tz_localize("UTC")
     else:
         df.index = df.index.tz_convert("UTC")
-    df["PV_total"] = df["PV to inverter Victron"] + df["PV to Inverter Huawei"]
+    df["PV_total"] = sum(df[c] for c in CONFIG.generation_cols)
     return df  # retains Battery Power column for B2 baseline
 
 
@@ -280,15 +317,15 @@ def main():
                 print(f"  SKIP {day_str}: solar has only {len(solar_slice)} hours")
                 continue
             solar_vals   = solar_slice["PV_total"].round(3).tolist()
-            battery_vals = solar_slice["Battery Power"].round(3).tolist()
+            battery_vals = solar_slice[CONFIG.battery_power_col].round(3).tolist()
 
             # Prices (naive local datetime index)
             price_slice = prices_df[prices_df.index.date == day.date()].iloc[:24]
             if len(price_slice) < 24:
                 print(f"  SKIP {day_str}: prices have only {len(price_slice)} hours")
                 continue
-            pvpc_vals = price_slice["PVPC"].tolist()
-            comp_vals = price_slice["Compensation"].tolist()
+            pvpc_vals = price_slice[CONFIG.import_price_col].tolist()
+            comp_vals = price_slice[CONFIG.export_price_col].tolist()
 
             # B1 and B2 baselines (observed demand)
             obs_total = [sum(obs_day[sp][t] for sp in obs_day) for t in range(24)]

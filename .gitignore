@@ -6,3 +6,17 @@ code/*.csv
 
 __pycache__/
 *.pyc
+
+# Configurations and run manifests written by the front end.
+config/custom.toml
+**/run_config.toml
+
+# Streamlit secrets, if a user ever adds any.
+.streamlit/secrets.toml
+
+# Originals from the image generator, superseded by app/assets/*.png.
+# They are JPEG, so they carry a painted checkerboard rather than transparency.
+app/recpy_icon-*.jpg
+
+# Built documentation site (published by GitHub Actions).
+site/

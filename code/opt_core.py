@@ -80,18 +80,18 @@ def deg_expr(m, t, deg_model, deg_mult):
 
 # ── Data loaders ─────────────────────────────────────────────────────────────
 def load_prices():
-    df = pd.read_csv(PRICES, index_col="datetime", parse_dates=True)
+    df = pd.read_csv(PRICES, index_col=CONFIG.market_time_col, parse_dates=True)
     df.index = pd.to_datetime(df.index)
     return df
 
 
 def load_solar():
-    df = pd.read_csv(SOLAR, index_col="datetime", parse_dates=True)
+    df = pd.read_csv(SOLAR, index_col=CONFIG.market_time_col, parse_dates=True)
     if df.index.tz is None:
         df.index = df.index.tz_localize("UTC")
     else:
         df.index = df.index.tz_convert("UTC")
-    df["PV_total"] = df["PV to inverter Victron"] + df["PV to Inverter Huawei"]
+    df["PV_total"] = sum(df[c] for c in CONFIG.generation_cols)
     return df
 
 
@@ -100,7 +100,7 @@ def load_fold_predictions(fold_dir, suffix, model_map):
     base = CV_DIR / fold_dir
     forecasts, observed = {}, {}
     for sp in SP_KEYS:
-        df = pd.read_csv(base / f"Predictions_{sp}_{suffix}.csv",
+        df = pd.read_csv(CONFIG.prediction_path(sp, suffix),
                          index_col=0, parse_dates=True)
         df.index = pd.to_datetime(df.index)
         forecasts[sp] = df[model_map[sp]].clip(lower=0)
@@ -115,7 +115,7 @@ def rmse_best_model(model_candidates_path=None):
         rmse_by_model = {}
         for fold in FOLDS:
             df = pd.read_csv(
-                CV_DIR / fold["dir"] / f"Predictions_{sp}_{fold['suffix']}.csv",
+                CONFIG.prediction_path(sp, fold["suffix"]),
                 index_col=0, parse_dates=True)
             obs = df["Observed"].to_numpy()
             for col in df.columns:

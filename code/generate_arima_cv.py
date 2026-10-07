@@ -25,6 +25,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX as SARIMAX_MODEL
 
 from recpy_config import CONFIG
+from run_report import record_failure
 
 # All settings come from the active configuration (config/default.toml unless
 # RECPY_CONFIG points elsewhere); see code/recpy_config.py.
@@ -80,7 +81,8 @@ def walk_forward_arima(train_series: pd.Series, test_series: pd.Series,
 
 def walk_forward_sarimax(train_series: pd.Series, test_series: pd.Series,
                          train_exog: pd.DataFrame, test_exog: pd.DataFrame,
-                         order: tuple, seasonal_order: tuple) -> np.ndarray:
+                         order: tuple, seasonal_order: tuple,
+                         sp_id: str = "") -> np.ndarray:
     """
     Refit once at fold start; use .append(refit=False) for daily state updates.
     Exogenous variables for the forecast period are taken from the known meteo data.
@@ -97,6 +99,7 @@ def walk_forward_sarimax(train_series: pd.Series, test_series: pd.Series,
         result = model.fit(disp=False, maxiter=200)
     except Exception as exc:
         print(f"      SARIMAX initial fit FAILED ({exc}) — skipping")
+        record_failure(CONFIG, "statistical", sp_id, "SARIMAX", exc)
         return np.full(len(test_series), np.nan)
 
     for day_idx in range(n_days):
@@ -144,8 +147,20 @@ def run_fold_sp(fold: dict, sp: dict, data: pd.DataFrame, out_dir: Path) -> None
     test_series  = CONFIG.limit_test(
         data.loc[fold["test_start"]:fold["test_end"], col])
 
-    csv_path = out_dir / f"Predictions_C_{sp_id}_{fold['name']}.csv"
+    csv_path = CONFIG.prediction_path(sp, fold)
     all_df   = pd.read_csv(csv_path, index_col=0, parse_dates=True)
+
+    # This stage appends to the file the machine-learning stage wrote, so the
+    # series it has just sliced must be the very same one. They diverge if the
+    # consumer reads a different column from the one its forecasts were scored
+    # against, and the columns appended here would then be compared against
+    # another consumer's demand.
+    observed = all_df["Observed"].to_numpy()
+    if len(observed) != len(test_series) or not np.allclose(
+            test_series.to_numpy(dtype=float), observed, atol=1e-6):
+        raise ValueError(
+            f"{sp_id} {fold['name']}: column {col!r} is not the 'Observed' "
+            f"series of {csv_path.name}; check this consumer's column.")
 
     from sklearn.metrics import mean_absolute_error, mean_squared_error
 
@@ -174,7 +189,8 @@ def run_fold_sp(fold: dict, sp: dict, data: pd.DataFrame, out_dir: Path) -> None
         print(f"    [{sp_id}] SARIMAX{sp['sarimax_order']}x{sp['sarimax_seasonal']} ({len(test_series)//24} steps) ...")
         preds = walk_forward_sarimax(train_series, test_series,
                                      train_exog, test_exog,
-                                     sp["sarimax_order"], sp["sarimax_seasonal"])
+                                     sp["sarimax_order"], sp["sarimax_seasonal"],
+                                     sp_id)
         if not np.all(np.isnan(preds)):
             mae  = mean_absolute_error(test_series.values[~np.isnan(preds)],
                                        preds[~np.isnan(preds)])
@@ -195,7 +211,7 @@ if __name__ == "__main__":
     data = pd.read_csv(
         BASE / METEO_CSV,
         sep=",", decimal=".",
-        index_col=0, parse_dates=["date_time"]
+        index_col=0, parse_dates=[CONFIG.time_col]
     )
 
     out_base = CONFIG.output_dir("cross_validation")

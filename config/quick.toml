@@ -50,6 +50,18 @@ prices = "prices_cv_folds.csv"
 solar = "solar_generation.csv"
 meteo_calendar = "consumption_meteo_calendar.csv"
 
+[columns]
+# Column names inside your CSV files. Set these to match your own data rather
+# than renaming your columns: the defaults are the ones this study's files use.
+# The timestamp is spelled differently in the two groups of files, which is why
+# there are two entries.
+timestamp_consumption = "date_time"   # consumption and weather files
+timestamp_market = "datetime"         # price and generation files
+import_price = "PVPC"                 # price paid for energy drawn from the grid
+export_price = "Compensation"         # price received for energy exported
+generation = ["PV to inverter Victron", "PV to Inverter Huawei"]
+battery_power = "Battery Power"       # metered battery flow, positive when charging
+
 [models]
 families = ["ml", "arima", "dl"]
 # Subset of ML regressors to run; omit or leave empty to run all 15. The two

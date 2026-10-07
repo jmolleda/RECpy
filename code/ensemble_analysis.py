@@ -32,7 +32,7 @@ SP_NAMES = {"SP1": "SP1", "SP2": "SP2", "SP3": "SP3",
 
 
 def load_fold(sp_id, fold):
-    df = pd.read_csv(BASE_CV / fold / f"Predictions_C_{sp_id}_{fold}.csv",
+    df = pd.read_csv(CONFIG.prediction_path(sp_id, fold),
                      index_col=0, parse_dates=True)
     return df
 

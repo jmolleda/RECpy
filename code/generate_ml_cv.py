@@ -33,6 +33,7 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 
 from recpy_config import CONFIG
+from run_report import record_failure
 
 # All settings come from the active configuration (config/default.toml unless
 # RECPY_CONFIG points elsewhere); see code/recpy_config.py.
@@ -128,7 +129,7 @@ def compute_naive168(test_index: pd.DatetimeIndex, history: pd.Series) -> np.nda
 def run_fold_sp(fold: dict, sp: dict) -> pd.DataFrame:
     series = pd.read_csv(
         BASE / sp["history_csv"],
-        parse_dates=["date_time"], index_col="date_time"
+        parse_dates=[CONFIG.time_col], index_col=CONFIG.time_col
     )[sp["history_col"]]
 
     s_train = series.loc[TRAIN_START:fold["train_end"]]
@@ -150,6 +151,7 @@ def run_fold_sp(fold: dict, sp: dict) -> pd.DataFrame:
             print(f"MAE={mae:.4f}  RMSE={rmse:.4f}")
         except Exception as exc:
             print(f"FAILED ({exc})")
+            record_failure(CONFIG, "machine learning", sp["id"], name, exc)
 
     result["Naive-168"] = compute_naive168(test_index, series)
     return result
@@ -171,7 +173,7 @@ if __name__ == "__main__":
         for sp in SUPPLY_POINTS:
             print(f"\n  --- {sp['name']} ({sp['id']}) ---")
             result = run_fold_sp(fold, sp)
-            out_path = fold_dir / f"Predictions_C_{sp['id']}_{fold['name']}.csv"
+            out_path = CONFIG.prediction_path(sp, fold)
             result.to_csv(out_path)
             n_models = len(result.columns) - 1
             print(f"  Saved -> {out_path.name}  ({n_models} models, {len(result)} rows)")

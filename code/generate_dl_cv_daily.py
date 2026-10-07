@@ -25,6 +25,7 @@ from keras.layers import Dense, LSTM, GRU, Dropout
 from tcn import TCN
 
 from recpy_config import CONFIG
+from run_report import record_failure
 
 # All settings come from the active configuration (config/default.toml unless
 # RECPY_CONFIG points elsewhere); see code/recpy_config.py.
@@ -151,7 +152,7 @@ def run_fold_sp(fold: dict, sp: dict, out_dir: Path) -> None:
     data = pd.read_csv(
         BASE / METEO_CSV,
         sep=",", decimal=".",
-        index_col=0, parse_dates=["date_time"]
+        index_col=0, parse_dates=[CONFIG.time_col]
     )
     # Keep the target consumption column first, then the calendar and weather
     # features. Selecting rather than dropping guarantees the target is column 0
@@ -171,7 +172,7 @@ def run_fold_sp(fold: dict, sp: dict, out_dir: Path) -> None:
 
     obs = scaler.inverse_transform(test_scaled)[:, 0]
 
-    csv_path = out_dir / f"Predictions_C_{sp_id}_{fold['name']}.csv"
+    csv_path = CONFIG.prediction_path(sp, fold)
     all_df   = pd.read_csv(csv_path, index_col=0, parse_dates=True)
 
     # This stage appends to the prediction file the machine-learning stage wrote,
@@ -207,6 +208,8 @@ def run_fold_sp(fold: dict, sp: dict, out_dir: Path) -> None:
 
         except Exception as exc:
             print(f"      FAILED ({exc})")
+            record_failure(CONFIG, "deep learning (daily)", sp_id, col_name,
+                           exc)
 
     all_df.to_csv(csv_path)
     n_models = len(all_df.columns) - 1

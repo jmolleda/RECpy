@@ -2,8 +2,8 @@
 Blocked CV — Wilcoxon pairwise model selection.
 
 Reads the prediction CSVs produced by generate_ml_cv.py + generate_dl_cv.py,
-runs the same pairwise one-sided Wilcoxon test as wilcoxon_model_selection.py,
-and aggregates results across the four folds.
+runs a pairwise one-sided Wilcoxon test for every pair of models, and
+aggregates the results across the folds.
 
 Per-fold output:
   cross_validation/wilcoxon_cv_per_fold.csv
@@ -56,7 +56,7 @@ def pairwise_wilcoxon(errors: pd.DataFrame) -> pd.DataFrame:
 
 
 def analyse_fold_sp(fold_name: str, sp_id: str) -> pd.DataFrame | None:
-    csv_path = BASE_CV / fold_name / f"Predictions_C_{sp_id}_{fold_name}.csv"
+    csv_path = CONFIG.prediction_path(sp_id, fold_name)
     if not csv_path.exists():
         print(f"  MISSING: {csv_path.name}")
         return None

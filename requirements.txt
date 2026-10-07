@@ -11,4 +11,4 @@ tensorflow==2.21.0
 keras-tcn==3.5.6
 pyomo==6.10.0
 highspy==1.14.0
-matplotlib
+matplotlib==3.10.8

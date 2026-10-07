@@ -25,9 +25,36 @@ from __future__ import annotations
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
+import argparse
+import os
+
+
+def _arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run the whole RECpy pipeline in dependency order.",
+        epilog="The same settings can be given as the environment variables "
+               "RECPY_CONFIG and RECPY_OUTPUT_DIR.")
+    parser.add_argument("-c", "--config", metavar="FILE",
+                        help="configuration to use (default: config/default.toml)")
+    parser.add_argument("-o", "--output", metavar="DIR",
+                        help="where to write results (default: from the configuration)")
+    return parser.parse_args()
+
+
+# Applied before the configuration is imported below, since it resolves itself
+# from the environment as soon as it is loaded.
+if __name__ == "__main__":
+    _args = _arguments()
+    if _args.config:
+        os.environ["RECPY_CONFIG"] = _args.config
+    if _args.output:
+        os.environ["RECPY_OUTPUT_DIR"] = _args.output
+
 from recpy_config import CONFIG
+from run_report import failures, write_manifest
 
 # Stage output goes straight to the inherited stream, so the driver's own
 # prints must not sit in a block buffer when stdout is a pipe or a log file.
@@ -41,7 +68,7 @@ STAGES = [
     ("generate_arima_cv.py",  "Statistical forecasts",        "arima"),
     ("generate_dl_cv.py",     "Deep-learning forecasts",      "dl"),
     ("wilcoxon_cv.py",        "Wilcoxon model selection",     None),
-    ("visualize_cv.py",       "Result figures",               None),
+    ("visualize_cv.py",       "Visualization",                None),
     ("run_optimization_cv.py", "Day-ahead scheduling",        None),
 ]
 
@@ -89,6 +116,7 @@ def main() -> None:
 
     ensure_data()
 
+    started = datetime.now(timezone.utc)
     timings = []
     skipped = []
     for script, label, family in STAGES:
@@ -106,7 +134,21 @@ def main() -> None:
     print(f"  {'TOTAL':<34} {sum(t for _, t in timings):>9,.1f} s")
     for note in skipped:
         print(f"  skipped: {note}")
+
+    lost = failures(CONFIG)
+    if lost:
+        print()
+        print(f"  {len(lost)} model(s) failed and were left out of the "
+              f"comparison:")
+        for row in lost:
+            print(f"    {row['stage']}: {row['entity']} {row['model']} "
+                  f"- {row['error'][:70]}")
+        print(f"  listed in {CONFIG.output_root / 'model_failures.csv'}")
+
+    manifest = write_manifest(CONFIG, started, datetime.now(timezone.utc),
+                              timings, 0)
     print(f"  outputs under {CONFIG.output_root}")
+    print(f"  what produced them is recorded in {manifest.name}")
 
 
 if __name__ == "__main__":

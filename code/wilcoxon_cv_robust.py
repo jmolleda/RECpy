@@ -119,7 +119,7 @@ def dm_pvalue(loss_a, loss_b, h=DM_H):
 # ---------------------------------------------------------------------------
 def load_ae(fold, sp_id):
     """Return (hourly_ae_df, daily_ae_df) for finite models only."""
-    path = BASE_CV / fold / f"Predictions_C_{sp_id}_{fold}.csv"
+    path = CONFIG.prediction_path(sp_id, fold)
     if not path.exists():
         print(f"  MISSING {path.name}")
         return None, None

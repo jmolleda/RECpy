@@ -56,7 +56,7 @@ def main():
     for sp in SUPPLY_POINTS:
         name = DEPLOYED[sp["id"]]
         series = pd.read_csv(BASE / sp["history_csv"],
-                             parse_dates=["date_time"], index_col="date_time")[sp["history_col"]]
+                             parse_dates=[CONFIG.time_col], index_col=CONFIG.time_col)[sp["history_col"]]
         print(f"\n--- {sp['name']} ({sp['id']}) : {name} ---")
         windows = [(f"{w}w", train_start_for(w)) for w in WEEK_WINDOWS]
         windows.append(("full", TRAIN_START))

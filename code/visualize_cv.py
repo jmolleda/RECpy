@@ -481,7 +481,7 @@ if __name__ == "__main__":
     print("Loading results...")
     pf, agg = load_data()
 
-    print("\nGenerating static figures...")
+    print("\nGenerating visualizations...")
     fig1_heatmap(pf)
     fig2_avg_ranking(agg)
     fig3_rmse_vs_wilcoxon(pf)

@@ -92,6 +92,48 @@ class Config:
         """Path to a named dataset file, e.g. data_file("prices")."""
         return self.data_dir / self.raw["data_files"][key]
 
+    # ---- column names in the data files ----------------------------------
+    @property
+    def columns(self) -> dict[str, Any]:
+        """Column names inside the CSV files, with this study's as defaults."""
+        c = dict(self.raw.get("columns", {}))
+        c.setdefault("timestamp_consumption", "date_time")
+        c.setdefault("timestamp_market", "datetime")
+        c.setdefault("import_price", "PVPC")
+        c.setdefault("export_price", "Compensation")
+        c.setdefault("generation", ["PV to inverter Victron",
+                                    "PV to Inverter Huawei"])
+        c.setdefault("battery_power", "Battery Power")
+        return c
+
+    @property
+    def time_col(self) -> str:
+        """Timestamp column of the consumption and weather files."""
+        return self.columns["timestamp_consumption"]
+
+    @property
+    def market_time_col(self) -> str:
+        """Timestamp column of the price and generation files."""
+        return self.columns["timestamp_market"]
+
+    @property
+    def import_price_col(self) -> str:
+        return self.columns["import_price"]
+
+    @property
+    def export_price_col(self) -> str:
+        return self.columns["export_price"]
+
+    @property
+    def generation_cols(self) -> list[str]:
+        """Generation columns, summed to give total production."""
+        g = self.columns["generation"]
+        return [g] if isinstance(g, str) else list(g)
+
+    @property
+    def battery_power_col(self) -> str:
+        return self.columns["battery_power"]
+
     # ---- experiment design ---------------------------------------------
     @property
     def folds(self) -> list[dict[str, str]]:
@@ -231,6 +273,33 @@ class Config:
         """True if this configuration includes the given model family."""
         return family in self.model_families
 
+    # ---- where results live ----------------------------------------------
+    def column_of(self, consumer) -> str:
+        """The consumption column of a consumer, given the consumer, its id or
+        the column itself."""
+        if isinstance(consumer, dict):
+            return consumer["column"]
+        by_id = {sp["id"]: sp["column"] for sp in self.raw["supply_points"]}
+        return by_id.get(consumer, consumer)
+
+    def prediction_path(self, consumer, period) -> Path:
+        """Where one consumer's forecasts for one period live.
+
+        Every stage has to agree on this: the machine-learning stage creates the
+        file, the statistical and deep-learning stages append their columns to
+        it, and model selection and scheduling read it. It was previously built
+        in ten places from two different parts of the configuration -- the
+        consumer's id in some, its column in others -- which agree only while
+        every column happens to be "C_" plus the id. A community naming its
+        meters anything else had the forecasting stages write one filename and
+        the scheduler look for another.
+
+        The column names the file, because the column identifies the series.
+        """
+        name = period["name"] if isinstance(period, dict) else str(period)
+        return (self.output_root / "cross_validation" / name
+                / f"Predictions_{self.column_of(consumer)}_{name}.csv")
+
     # ---- physical system ------------------------------------------------
     @property
     def battery(self) -> dict[str, float]:
@@ -274,8 +343,35 @@ class Config:
         catches surface hours in: a model family nobody runs, or a supply point
         whose deployed model was left out of the regressor subset, which only
         breaks once the scheduling stage looks for its forecasts.
+
+        The structural checks come first and return on their own. Everything
+        after them dereferences the keys they look for, so reporting a missing
+        key is only possible before that point -- which matters because the
+        front end lets a user add a fold or a supply point a field at a time.
         """
         problems = []
+
+        if not self.raw.get("folds"):
+            problems.append("no folds defined")
+        for i, f in enumerate(self.raw.get("folds", [])):
+            missing = [k for k in ("name", "label", "train_end",
+                                   "test_start", "test_end") if not f.get(k)]
+            if missing:
+                problems.append(
+                    f"fold {f.get('name') or i + 1}: missing {', '.join(missing)}")
+
+        if not self.raw.get("supply_points"):
+            problems.append("no supply points defined")
+        for i, sp in enumerate(self.raw.get("supply_points", [])):
+            missing = [k for k in ("id", "history_csv", "column")
+                       if not sp.get(k)]
+            if missing:
+                problems.append(
+                    f"supply point {sp.get('id') or i + 1}: "
+                    f"missing {', '.join(missing)}")
+
+        if problems:
+            return problems
 
         unknown = [f for f in self.model_families if f not in self.KNOWN_FAMILIES]
         if unknown:

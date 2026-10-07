@@ -1,8 +1,19 @@
+<img src="app/assets/icon.png" alt="" align="right" width="110">
+
 # A Particularized Forecasting and Optimization Framework for Rural Energy Communities — Code
+
+[![tests](https://github.com/jmolleda/RECpy/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/jmolleda/RECpy/actions/workflows/tests.yml)
+[![python 3.12](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/release/python-3120/)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-informational)](LICENSE)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21129972-blue)](https://doi.org/10.5281/zenodo.21129972)
+[![repo status: active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![docs](https://img.shields.io/badge/docs-jmolleda.github.io%2FRECpy-blue)](https://jmolleda.github.io/RECpy/)
+
+**Documentation: <https://jmolleda.github.io/RECpy/>**
 
 This repository contains the source code accompanying the paper:
 
-> Fernando Cosío, Julio Molleda, Fidel Díez, Rubén Usamentiaga.
+> F. Cosío, J. Molleda, F. Díez, R. Usamentiaga.
 > *A particularized forecasting and optimization framework for rural energy communities.*
 > Machine Learning with Applications, vol. 26, art. 101016, December 2026.
 > <https://doi.org/10.1016/j.mlwa.2026.101016>
@@ -19,10 +30,16 @@ artifact of peer review.
 ## Repository layout
 
 ```
-code/    all analysis scripts (+ run_pipeline.py, make_synthetic_data.py)
+app/     local web front end (Streamlit) and the application icon
+code/    all analysis scripts (+ run_pipeline.py, check_data.py)
 config/  experiment configurations (default.toml, quick.toml)
 data/    a fully synthetic example dataset (see below)
-requirements.txt
+docs/    the documentation site (MkDocs)
+tests/   the test suite (pytest)
+requirements.txt      core pipeline
+requirements-gui.txt  front end (adds Streamlit)
+requirements-docs.txt documentation site
+CITATION.cff, codemeta.json   how to cite this software
 LICENSE  (MIT)
 ```
 
@@ -73,7 +90,7 @@ should not be read as the published ones.
 ## Data availability
 
 The **raw household consumption series are not included** for privacy reasons. They
-may be requested from the corresponding author, Julio Molleda
+may be requested from the corresponding author, J. Molleda
 (<jmolleda@uniovi.es>), and will be shared where the privacy constraints of the
 participating households allow.
 
@@ -99,6 +116,40 @@ Expected files and columns (real or synthetic):
 
 Prices are taken from the Spanish TSO ESIOS service and weather features from the
 Open-Meteo API; the corresponding synthetic columns imitate their format.
+
+## Using your own data
+
+Nothing about this community is hard-coded. A different one needs a
+configuration naming its files and the columns inside them:
+
+```toml
+[paths]
+data = "/path/to/my/csv/files"
+
+[columns]
+timestamp_consumption = "Timestamp"      # in the consumption and weather files
+timestamp_market = "Timestamp"           # in the price and generation files
+import_price = "buy_eur_kwh"
+export_price = "sell_eur_kwh"
+generation = ["roof_array_kw", "barn_array_kw"]
+battery_power = "battery_kw"
+```
+
+Then check the data before running anything:
+
+```bash
+RECPY_CONFIG=config/mine.toml python code/check_data.py
+```
+
+It reports, per file, whether the timestamp column is there and parses, whether
+the series is hourly and gap-free, whether it covers whole days and the periods
+you configured, whether the named columns exist, and whether the values are
+plausible — in terms of your files, rather than as an error from inside a
+forecasting script. The front end runs the same checks from its **Check my
+data** button.
+
+The framework expects **hourly** data in whole days. Sub-hourly series need
+resampling first; supporting them directly is planned, not present.
 
 ## Running the experiment
 
@@ -127,8 +178,8 @@ python code/generate_dl_cv.py          # LSTM / GRU / TCN, single-fit (adds colu
 # 2. Statistical model selection
 python code/wilcoxon_cv.py             # Wilcoxon net-wins tournament
 
-# 3. Figures
-python code/visualize_cv.py            # figures -> <output>/cross_validation/figures/
+# 3. Visualization
+python code/visualize_cv.py            # plots -> <output>/cross_validation/figures/
 
 # 4. Optimization
 python code/run_optimization_cv.py     # day-ahead LP over the folds
@@ -147,6 +198,33 @@ python code/ensemble_analysis.py                   # forecast-combination strate
 python code/cold_start_analysis.py                 # limited-history (cold-start) experiment
 python code/timing_analysis.py                     # training / retraining times
 ```
+
+## Web front end
+
+For setting up a community without editing TOML by hand:
+
+```bash
+pip install -r requirements-gui.txt
+streamlit run app/recpy_app.py
+```
+
+Then open <http://127.0.0.1:8501>. The interface has three tabs: **Configuration** (edit
+supply points, folds, battery and grid limits, the model families and the
+regressor subset, with the consistency check live in the sidebar, and save the
+result as a new TOML), **Run** (a time estimate from measured per-fit times, then
+the pipeline as a subprocess with its log streaming in), and **Results** (the
+model-selection ranking, observed-against-forecast charts with per-model MAE and
+RMSE, the scheduling summary and savings, and the visualizations).
+
+**It runs only on this machine.** `.streamlit/config.toml` binds the server to
+`127.0.0.1`, because the series it reads are household consumption data and
+Streamlit otherwise listens on every interface and advertises an external URL.
+Nothing is uploaded and no telemetry is sent.
+
+The interface adds no analysis of its own: it edits a configuration, writes it
+out, and runs `code/run_pipeline.py` against it. A chart obtained through the
+interface is the chart the scripts produce, and the configuration it saves runs
+identically from the command line.
 
 ## Reproducibility
 
@@ -177,6 +255,21 @@ python code/timing_analysis.py                     # training / retraining times
   forecasting. ML/statistical models are univariate (192-hour consumption lag);
   deep-learning models are multivariate (calendar + weather features).
 
+## Tests
+
+```bash
+pip install pytest tomli-w
+python -m pytest                 # the whole suite, about 20 seconds
+python -m pytest -m "not slow"   # skip the two end-to-end runs
+```
+
+The suite covers what the configuration layer resolves and what it refuses, the
+data checker against a dataset damaged one fault at a time, and two end-to-end
+runs: a one-consumer, one-day, one-model pipeline, and the same on a dataset
+whose columns are named as another community's would be. It runs on every push
+through GitHub Actions, which also installs the pinned requirements, so a
+failure there means the declared environment no longer installs.
+
 ## Code layout (`code/`)
 
 **Forecasting**
@@ -190,7 +283,6 @@ python code/timing_analysis.py                     # training / retraining times
 - `wilcoxon_cv.py` — pairwise Wilcoxon signed-rank tournament (net wins).
 - `wilcoxon_cv_robust.py` — robustness: daily-aggregated errors, Holm and
   Benjamini–Hochberg correction, and Diebold–Mariano (HAC + HLN) tests.
-- `wilcoxon_model_selection.py`, `wilcoxon_test.py` — helpers.
 
 **Optimization**
 - `opt_core.py` — shared LP core (Pyomo + HiGHS): parameterized battery
@@ -205,11 +297,17 @@ python code/timing_analysis.py                     # training / retraining times
 - `cold_start_analysis.py` — limited-history (2/4/8-week) onboarding experiment.
 - `timing_analysis.py` — training / retraining time measurement.
 
-**Figures**
-- `visualize_cv.py` — generates the result figures.
+**Visualization**
+- `visualize_cv.py` — generates the result plots.
 
-**Synthetic data**
+**Data**
+- `check_data.py` — checks a dataset is the shape the pipeline expects, before
+  anything runs. Importable, so the front end can use it too.
 - `make_synthetic_data.py` — generates the synthetic example dataset in `data/`.
+
+**Front end**
+- `app/recpy_app.py` — the Streamlit interface described above. Optional; the
+  pipeline does not import it.
 
 **Infrastructure**
 - `recpy_config.py` — loads the active configuration; every other script imports

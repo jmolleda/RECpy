@@ -70,8 +70,8 @@ def build_days(prices_df, solar_df, model_map):
                 "demand_fc": demand_day, "obs_total": obs_total,
                 "obs_demand_sp": obs_day,
                 "pv_obs": pv_obs, "pv_fc": pv_fc,
-                "battery": solar["Battery Power"].round(3).tolist(),
-                "pvpc": price["PVPC"].tolist(), "comp": price["Compensation"].tolist(),
+                "battery": solar[CONFIG.battery_power_col].round(3).tolist(),
+                "pvpc": price[CONFIG.import_price_col].tolist(), "comp": price[CONFIG.export_price_col].tolist(),
             })
     return days
 

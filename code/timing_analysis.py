@@ -43,7 +43,7 @@ def time_ml():
     models = get_models()
     for sp in ml.SUPPLY_POINTS:
         series = pd.read_csv(BASE / sp["history_csv"],
-                             parse_dates=["date_time"], index_col="date_time")[sp["history_col"]]
+                             parse_dates=[CONFIG.time_col], index_col=CONFIG.time_col)[sp["history_col"]]
         s_train = series.loc[TRAIN_START:TRAIN_END]
         X, y = ml_to_supervised(s_train.values.astype(float), N_INPUT)
         name = DEPLOYED[sp["id"]]
@@ -71,7 +71,7 @@ def time_dl():
     rows = []
     for sp in dl.SUPPLY_POINTS:
         data = pd.read_csv(BASE / dl.METEO_CSV, sep=",", decimal=".",
-                           index_col=0, parse_dates=["date_time"])
+                           index_col=0, parse_dates=[CONFIG.time_col])
         # Keep the target consumption column first, then the calendar and weather
         # features; selecting rather than dropping guarantees the target is
         # column 0 whichever supply points the configuration analyses.
