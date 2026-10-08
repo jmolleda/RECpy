@@ -119,7 +119,7 @@ Expected files and columns (real or synthetic):
 | `data/consumption_SP1.csv` … `consumption_SP6.csv` | `date_time`, `C_SPk` |
 | `data/consumption_meteo_calendar.csv` | `date_time`, `C_SP1`…`C_SP6`, `Hour`, `DoW`, `Month`, `Weekend`, `Holidays`, weather features |
 | `data/prices_cv_folds.csv` | `datetime`, `PVPC`, `Compensation` |
-| `data/solar_generation.csv` | `datetime`, `PV to inverter Victron`, `PV to Inverter Huawei`, `Battery Power` |
+| `data/solar_generation.csv` | `datetime`, `PV to inverter A`, `PV to inverter B`, `Battery Power` |
 
 Prices are taken from the Spanish TSO ESIOS service and weather features from the
 Open-Meteo API; the corresponding synthetic columns imitate their format.

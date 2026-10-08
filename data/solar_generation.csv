@@ -1,4 +1,4 @@
-datetime,PV to inverter Victron,PV to Inverter Huawei,Battery Power
+datetime,PV to inverter A,PV to inverter B,Battery Power
 2025-01-01 00:00:00,0.0,0.0,0.0
 2025-01-01 01:00:00,0.0,0.0,0.0
 2025-01-01 02:00:00,0.0,0.0,0.0

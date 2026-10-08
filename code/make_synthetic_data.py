@@ -8,8 +8,8 @@ Writes, under ``../data/`` (relative to this script):
   consumption_meteo_calendar.csv                date_time, C_SP1..C_SP6,
                                                 calendar + weather features
   prices_cv_folds.csv                           date_time, PVPC, Compensation
-  solar_generation.csv                          date_time, PV to inverter Victron,
-                                                PV to Inverter Huawei, Battery Power
+  solar_generation.csv                          date_time, PV to inverter A,
+                                                PV to inverter B, Battery Power
 
 The calendar year is controlled by YEAR and MUST match the YEAR constant used by
 the analysis scripts.
@@ -121,14 +121,14 @@ def main() -> None:
 
     # ── Solar generation + observed battery-controller behaviour ─────────────────
     pv_total = 32 * daylight * season * RNG.uniform(0.6, 1.0, n)      # kWh, up to ~PV peak
-    victron = np.round(pv_total * 0.55, 3)
-    huawei = np.round(pv_total * 0.45, 3)
+    inverter_a = np.round(pv_total * 0.55, 3)
+    inverter_b = np.round(pv_total * 0.45, 3)
     # naive controller: charge on midday surplus, discharge in the evening
     battery = np.where((hour >= 10) & (hour <= 15), RNG.uniform(0, 6, n),
                        np.where((hour >= 18) & (hour <= 22), -RNG.uniform(0, 5, n), 0.0))
     pd.DataFrame({CONFIG.market_time_col: idx,
-                  CONFIG.generation_cols[0]: victron,
-                  CONFIG.generation_cols[1]: huawei,
+                  CONFIG.generation_cols[0]: inverter_a,
+                  CONFIG.generation_cols[1]: inverter_b,
                   CONFIG.battery_power_col: np.round(battery, 3)}).to_csv(
         OUT / "solar_generation.csv", index=False)
 

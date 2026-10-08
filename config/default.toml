@@ -43,7 +43,7 @@ timestamp_consumption = "date_time"   # consumption and weather files
 timestamp_market = "datetime"         # price and generation files
 import_price = "PVPC"                 # price paid for energy drawn from the grid
 export_price = "Compensation"         # price received for energy exported
-generation = ["PV to inverter Victron", "PV to Inverter Huawei"]
+generation = ["PV to inverter A", "PV to inverter B"]
 battery_power = "Battery Power"       # metered battery flow, positive when charging
 
 [models]

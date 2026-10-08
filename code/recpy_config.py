@@ -101,8 +101,8 @@ class Config:
         c.setdefault("timestamp_market", "datetime")
         c.setdefault("import_price", "PVPC")
         c.setdefault("export_price", "Compensation")
-        c.setdefault("generation", ["PV to inverter Victron",
-                                    "PV to Inverter Huawei"])
+        c.setdefault("generation", ["PV to inverter A",
+                                    "PV to inverter B"])
         c.setdefault("battery_power", "Battery Power")
         return c
 
