@@ -1,6 +1,6 @@
 <img src="app/assets/icon.png" alt="" align="right" width="110">
 
-# RECpy: particularized demand forecasting and day-ahead scheduling for energy communities
+# RECpy
 
 [![tests](https://github.com/jmolleda/RECpy/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/jmolleda/RECpy/actions/workflows/tests.yml)
 [![python 3.12](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/release/python-3120/)
@@ -12,6 +12,8 @@
 RECpy forecasts the next-day electricity demand of each consumer in an energy
 community and schedules a shared battery against day-ahead prices. Every metered
 consumer gets its own forecasting model, selected on its own data.
+RECpy simulates rather than controls: a community can see what a shared
+battery would have saved before deploying anything.
 
 ![RECpy's local web front end](docs/assets/screenshot.png)
 

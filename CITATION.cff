@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: >-
   If you use this software, please cite both the software itself and the article
   that introduced the method.
-title: "RECpy: particularized demand forecasting and day-ahead scheduling for energy communities"
+title: "RECpy: A Python framework for particularized demand forecasting and day-ahead battery scheduling in energy communities"
 abstract: >-
   RECpy forecasts next-day electricity demand for each consumer in an energy
   community and schedules a shared battery against day-ahead prices. Each
@@ -11,7 +11,9 @@ abstract: >-
   architectures by a Wilcoxon signed-rank tournament with multiple-comparison
   control. The selected forecasts drive a linear programme solved with Pyomo and
   HiGHS. Every setting lives in a configuration file, so adapting the framework
-  to another community requires no code changes.
+  to another community requires no code changes. RECpy simulates rather than
+  controls: a community can see what a shared battery would have saved before
+  deploying anything.
 type: software
 license: MIT
 version: 2.0.0
